@@ -14,7 +14,7 @@
 #define VECTOR3F_NUMBER_OF_COMPONENTS 3
 
 typedef struct {
-    GLint rotation;
+    GLint transformation;
 } ShaderVariables;
 
 typedef struct {
@@ -31,8 +31,8 @@ typedef struct {
 typedef struct {
     int last_time;
     double delta_time;
-    float scale;
-    float delta;
+    float rotation;
+    float pos_index;
 } App;
 
 typedef struct {
@@ -94,9 +94,9 @@ bool create_gui(int *argc, char **argv) {
         return false;
     }
 
-    gui.variables.rotation = glGetUniformLocation(gui.program, "gRotation");
-    if (gui.variables.rotation < 0) {
-        fprintf(stderr, "Failed to get gRotation variable\n");
+    gui.variables.transformation = glGetUniformLocation(gui.program, "gTransformation");
+    if (gui.variables.transformation < 0) {
+        fprintf(stderr, "Failed to get gTransformation variable\n");
         destroy_gui();
         return false;
     }
@@ -106,15 +106,27 @@ bool create_gui(int *argc, char **argv) {
 }
 
 void render() {
-    app.scale += app.delta * app.delta_time;
-    if (app.scale > 2.0f * M_PI) {
-        app.scale -= 2.0f * M_PI;
+    app.rotation += app.delta_time;
+    float double_pi = 2.0f * M_PI;
+    if (app.rotation > double_pi) {
+        app.rotation -= double_pi;
     }
-    
+    app.pos_index += app.delta_time;
+    if (app.pos_index > double_pi) {
+        app.pos_index -= double_pi;
+    }
+    Matrix4f scale;
+    float scale_amount = 0.2 + 0.5 * fabs(cos(app.pos_index));
+    matrix4f_scale(&scale, scale_amount, scale_amount, 1);
     Matrix4f rotation;
-    matrix4f_rotation(&rotation, 0,0,app.scale);
+    matrix4f_rotation(&rotation, 0,0, app.rotation);
+    Matrix4f translation;
+    matrix4f_translation(&translation, 0.5*cos(app.pos_index), 0.5*sin(2*app.pos_index), 0);
+    Matrix4f transform;
+    matrix4f_multiply(&rotation, &scale, &transform);
+    matrix4f_multiply(&translation, &transform, &transform);
 
-    glUniformMatrix4fv(gui.variables.rotation, 1, GL_TRUE, &rotation.m[0][0]);
+    glUniformMatrix4fv(gui.variables.transformation, 1, GL_TRUE, &transform.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gui.ibo);
     glEnableClientState(GL_VERTEX_ARRAY);    
@@ -208,7 +220,6 @@ int main(int argc, char **argv) {
     if (!create_gui(&argc, argv)) {
         return 1;
     }
-    app.delta = 1.0f;
     create_vbo();
     glutDisplayFunc(display_func); 
     glutKeyboardFunc(keyboard_func);

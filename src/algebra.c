@@ -1,5 +1,6 @@
 #include "algebra.h"
 #include "math.h"
+#include "string.h"
 
 void vector3f_set(Vector3f *v, float x, float y, float z) {
     v->x = x;
@@ -42,3 +43,19 @@ void matrix4f_rotation(Matrix4f *m, float ax, float ay, float az) {
     matrix4f_set(m, cos(az), -sin(az), 0, 0, sin(az), cos(az),0,0, 0,0,1,0, 0,0,0,1);
 }
 
+void matrix4f_scale(Matrix4f *m, float sx, float sy, float sz) {
+    matrix4f_set(m, sx,0,0,0, 0,sy,0,0, 0,0,sz,0, 0,0,0,1);
+}
+
+void matrix4f_multiply(Matrix4f *lhs, Matrix4f *rhs, Matrix4f *target) {
+    float dst[4][4];
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            dst[i][j] = lhs->m[i][0] * rhs->m[0][j] +
+                        lhs->m[i][1] * rhs->m[1][j] +
+                        lhs->m[i][2] * rhs->m[2][j] +
+                        lhs->m[i][3] * rhs->m[3][j];
+        }
+    }
+    memcpy(target->m, dst, sizeof(float) * 16);
+}
