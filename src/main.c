@@ -152,9 +152,10 @@ void create_vbo() {
     GLuint *vao = &gui.vao;
 
     Vector3f vertices[3];
-    vector3f_set(&vertices[0], -0.5, -0.5, 0);
-    vector3f_set(&vertices[1], 0, 0.5, 0);
-    vector3f_set(&vertices[2], 0.5, -0.5, 0);
+    float h = 0.433;
+    vector3f_set(&vertices[0], -0.5, -h, 0);
+    vector3f_set(&vertices[1], 0, h, 0);
+    vector3f_set(&vertices[2], 0.5, -h, 0);
 
     glGenVertexArrays(1, vao);
     glGenBuffers(1, vbo);
