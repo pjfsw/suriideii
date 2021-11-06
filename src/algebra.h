@@ -19,4 +19,6 @@ void matrix4f_set(Matrix4f *m, float m11, float m12, float m13, float m14,
 
 void matrix4f_translation(Matrix4f *m, float x, float y, float z);
 
+void matrix4f_rotation(Matrix4f *m, float ax, float ay, float az);
+
 #endif

@@ -1,11 +1,11 @@
 #include <GL/glew.h>
 #include <GL/glut.h>
 #include <GL/freeglut_ext.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include "algebra.h"
-
 #include "shader_program.h"
 
 #define REQ_MAJOR_VERSION 4
@@ -14,7 +14,7 @@
 #define VECTOR3F_NUMBER_OF_COMPONENTS 3
 
 typedef struct {
-    GLint translation;
+    GLint rotation;
 } ShaderVariables;
 
 typedef struct {
@@ -28,6 +28,8 @@ typedef struct {
 } Gui;
 
 typedef struct {
+    int last_time;
+    double delta_time;
     float scale;
     float delta;
 } App;
@@ -52,6 +54,11 @@ bool create_gui(int *argc, char **argv) {
     printf("Screen height: %d\n", scrh);
     gui.width = scrw * 5 / 6;
     gui.height = scrh * 5 / 6;
+    if (gui.width < gui.height) {
+        gui.height = gui.width;
+    } else {
+        gui.width = gui.height;
+    }
 
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE/* | GLUT_DEPTH*/);
     glutInitWindowSize(gui.width, gui.height);
@@ -81,9 +88,9 @@ bool create_gui(int *argc, char **argv) {
         return false;
     }
 
-    gui.variables.translation = glGetUniformLocation(gui.program, "gTranslation");
-    if (gui.variables.translation < 0) {
-        fprintf(stderr, "Failed to get gTranslation variable\n");
+    gui.variables.rotation = glGetUniformLocation(gui.program, "gRotation");
+    if (gui.variables.rotation < 0) {
+        fprintf(stderr, "Failed to get gRotation variable\n");
         destroy_gui();
         return false;
     }
@@ -93,15 +100,15 @@ bool create_gui(int *argc, char **argv) {
 }
 
 void render() {
-    app.scale += app.delta;
-    if (app.scale <= -1.0f || app.scale >= 1.0f) {
-        app.delta *= -1.0f;
+    app.scale += app.delta * app.delta_time;
+    if (app.scale > 2.0f * M_PI) {
+        app.scale -= 2.0f * M_PI;
     }
     
-    Matrix4f translation;
-    matrix4f_translation(&translation, app.scale, app.scale * 0.5, 0);
+    Matrix4f rotation;
+    matrix4f_rotation(&rotation, 0,0,app.scale);
 
-    glUniformMatrix4fv(gui.variables.translation, 1, GL_TRUE, &translation.m[0][0]);
+    glUniformMatrix4fv(gui.variables.rotation, 1, GL_TRUE, &rotation.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
     glEnableClientState(GL_VERTEX_ARRAY);    
     glEnableVertexAttribArray(0);
@@ -114,6 +121,9 @@ void render() {
 
 void display_func() {
     glClear(GL_COLOR_BUFFER_BIT);
+    int time = glutGet(GLUT_ELAPSED_TIME);
+    app.delta_time = (double)(time-app.last_time)*0.001;
+    app.last_time = time;
     render();
     glutSwapBuffers();
 }
@@ -161,12 +171,13 @@ int main(int argc, char **argv) {
     if (!create_gui(&argc, argv)) {
         return 1;
     }
-    app.delta = 0.005f;
+    app.delta = 1.0f;
     create_vbo();
     glutDisplayFunc(display_func); 
     glutKeyboardFunc(keyboard_func);
     glutReshapeFunc(reshape_func);
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);    
+    app.last_time = glutGet(GLUT_ELAPSED_TIME);
     glutMainLoop();
     destroy_vbo();
     destroy_gui();

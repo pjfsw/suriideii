@@ -2,8 +2,8 @@
 
 layout (location = 0) in vec3 position;
 
-uniform mat4 gTranslation;
+uniform mat4 gRotation;
 
 void main() {
-    gl_Position = gTranslation * vec4(position, 1.0);
+    gl_Position = gRotation * vec4(position, 1.0);
 }

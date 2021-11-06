@@ -28,5 +28,5 @@ add_executable(suriideii
 configure_file(resources/shader.vs ./shader.vs COPYONLY)
 configure_file(resources/shader.fs ./shader.fs COPYONLY)
 
-target_link_libraries(suriideii ${GLEW_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
+target_link_libraries(suriideii ${GLEW_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} m )
 

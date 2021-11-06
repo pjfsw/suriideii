@@ -1,4 +1,5 @@
 #include "algebra.h"
+#include "math.h"
 
 void vector3f_set(Vector3f *v, float x, float y, float z) {
     v->x = x;
@@ -34,3 +35,10 @@ void matrix4f_set(Matrix4f *m, float m11, float m12, float m13, float m14,
 void matrix4f_translation(Matrix4f *m, float x, float y, float z) {
     matrix4f_set(m, 1,0,0,x, 0,1,0,y, 0,0,1,z,0,0,0,1);
 }
+
+void matrix4f_rotation(Matrix4f *m, float ax, float ay, float az) {
+    ax = ax;
+    ay = ay;
+    matrix4f_set(m, cos(az), -sin(az), 0, 0, sin(az), cos(az),0,0, 0,0,1,0, 0,0,0,1);
+}
+
