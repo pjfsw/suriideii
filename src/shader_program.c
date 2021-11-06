@@ -1,11 +1,8 @@
 #include "shader_program.h"
 
-#include <GL/glew.h>
-#include <GL/glut.h>
-#include <GL/freeglut_ext.h>
-
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 bool _sp_create_shader(GLuint shader_program, int shader_type, char *shader) {
     GLuint shader_obj = glCreateShader(shader_type);
@@ -36,18 +33,18 @@ bool _sp_create_shader(GLuint shader_program, int shader_type, char *shader) {
     return true;
 }
 
-bool _sp_compile_shaders(char *vertex_shader, char *fragment_shader) {
+GLuint _sp_compile_shaders(char *vertex_shader, char *fragment_shader) {
     GLuint shader_program = glCreateProgram();
     if (shader_program == 0) {
         fprintf(stderr, "Failed to create shader program\n");
-        return false;
+        return 0;
     }
 
     if (!_sp_create_shader(shader_program, GL_VERTEX_SHADER, vertex_shader)) {
-        return false;
+        return 0;
     }
     if (!_sp_create_shader(shader_program, GL_FRAGMENT_SHADER, fragment_shader)) {
-        return false;
+        return 0;
     }
     glLinkProgram(shader_program);
 
@@ -58,7 +55,7 @@ bool _sp_compile_shaders(char *vertex_shader, char *fragment_shader) {
     if (success == 0) {
         glGetProgramInfoLog(shader_program, sizeof(info_log), NULL, info_log);
         fprintf(stderr, "Error linking shader program: '%s'\n", info_log);
-        return false;
+        return 0;
     }
 
     glValidateProgram(shader_program);
@@ -66,12 +63,12 @@ bool _sp_compile_shaders(char *vertex_shader, char *fragment_shader) {
     if (success == 0) {
         glGetProgramInfoLog(shader_program, sizeof(info_log), NULL, info_log);
         fprintf(stderr, "Invalid shader program: '%s'\n", info_log);
-        return false;
+        return 0;
     }
 
     glUseProgram(shader_program);
 
-    return true;
+    return shader_program;
 }
 
 char *_load_file(char *file_name) {
@@ -90,19 +87,19 @@ char *_load_file(char *file_name) {
     return str;
 }
 
-bool shader_program_build(char *vs_name, char *fs_name) {
+GLuint shader_program_build(char *vs_name, char *fs_name) {
     char *vertex_shader = _load_file(vs_name);
     if (vertex_shader == NULL) {
-        return false;
+        return 0;
     }
     char *fragment_shader = _load_file(fs_name);
     if (fragment_shader == NULL) {
         free(vertex_shader);
-        return false;
+        return 0;
     }
 
-    bool status = _sp_compile_shaders(vertex_shader, fragment_shader);
+    GLuint program = _sp_compile_shaders(vertex_shader, fragment_shader);
     free(vertex_shader);
     free(fragment_shader);
-    return status;
+    return program;
 }

@@ -18,14 +18,26 @@ typedef struct {
 #define VECTOR3F_NUMBER_OF_COMPONENTS 3
 
 typedef struct {
+    GLint gScale;
+} ShaderVariables;
+
+typedef struct {
     int window;
     int width;
     int height;
     GLuint vao;
     GLuint vbo;
+    GLuint program;
+    ShaderVariables variables;
 } Gui;
 
+typedef struct {
+    float scale;
+    float delta;
+} App;
+
 Gui gui;
+App app;
 
 void destroy_gui() {
     if (gui.window > 0) {
@@ -68,15 +80,29 @@ bool create_gui(int *argc, char **argv) {
     }
     printf("GL Version %s\n", gl_version);
 
-    if (!shader_program_build("shader.vs", "shader.fs")) {
+    if (!(gui.program = shader_program_build("shader.vs", "shader.fs"))) {
         destroy_gui();
         return false;
     }
+
+    gui.variables.gScale = glGetUniformLocation(gui.program, "gScale");
+    if (gui.variables.gScale < 0) {
+        fprintf(stderr, "Failed to get gScale variable\n");
+        destroy_gui();
+        return false;
+    }
+
 
     return true;
 }
 
 void render() {
+    app.scale += app.delta;
+    if (app.scale <= -1.0f || app.scale >= 1.0f) {
+        app.delta *= -1.0f;
+    }
+
+    glUniform1f(gui.variables.gScale, app.scale);
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
     glEnableClientState(GL_VERTEX_ARRAY);    
     glEnableVertexAttribArray(0);
@@ -84,6 +110,7 @@ void render() {
     glDrawArrays(GL_TRIANGLES, 0, 3);
     glDisableVertexAttribArray(0);    
     glDisableClientState(GL_VERTEX_ARRAY);
+    glutPostRedisplay();
 }
 
 void display_func() {
@@ -138,20 +165,17 @@ void destroy_vbo() {
     glDeleteBuffers(1, &gui.vbo);
 }
 
-
 int main(int argc, char **argv) {
     if (!create_gui(&argc, argv)) {
         return 1;
     }
+    app.delta = 0.005f;
     create_vbo();
-    printf("VBO created\n");
     glutDisplayFunc(display_func); 
     glutKeyboardFunc(keyboard_func);
     glutReshapeFunc(reshape_func);
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);    
-    printf("Starting main loop\n");
     glutMainLoop();
-    printf("Hello world\n");
     destroy_vbo();
     destroy_gui();
 }
