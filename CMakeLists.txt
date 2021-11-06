@@ -20,6 +20,7 @@ include_directories(${GLEW_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_
 add_executable(suriideii
     src/main.c
     src/shader_program.c
+    src/algebra.c
 )
 #configure_file(resources/font.png ./font.png COPYONLY)
 #configure_file(resources/pixla.png ./pixla.png COPYONLY)

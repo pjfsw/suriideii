@@ -4,21 +4,17 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include "algebra.h"
 
 #include "shader_program.h"
 
 #define REQ_MAJOR_VERSION 4
 #define REQ_MINOR_VERSION 2
 
-typedef struct {
-    float x;
-    float y;
-    float z;
-} Vector3f;
 #define VECTOR3F_NUMBER_OF_COMPONENTS 3
 
 typedef struct {
-    GLint gScale;
+    GLint translation;
 } ShaderVariables;
 
 typedef struct {
@@ -85,9 +81,9 @@ bool create_gui(int *argc, char **argv) {
         return false;
     }
 
-    gui.variables.gScale = glGetUniformLocation(gui.program, "gScale");
-    if (gui.variables.gScale < 0) {
-        fprintf(stderr, "Failed to get gScale variable\n");
+    gui.variables.translation = glGetUniformLocation(gui.program, "gTranslation");
+    if (gui.variables.translation < 0) {
+        fprintf(stderr, "Failed to get gTranslation variable\n");
         destroy_gui();
         return false;
     }
@@ -101,8 +97,11 @@ void render() {
     if (app.scale <= -1.0f || app.scale >= 1.0f) {
         app.delta *= -1.0f;
     }
+    
+    Matrix4f translation;
+    matrix4f_translation(&translation, app.scale, app.scale * 0.5, 0);
 
-    glUniform1f(gui.variables.gScale, app.scale);
+    glUniformMatrix4fv(gui.variables.translation, 1, GL_TRUE, &translation.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
     glEnableClientState(GL_VERTEX_ARRAY);    
     glEnableVertexAttribArray(0);
@@ -134,12 +133,6 @@ void reshape_func(int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void set_vector(Vector3f *v, float x, float y, float z) {
-    v->x = x;
-    v->y = y;
-    v->z = z;
-}
-
 void create_vbo() {
     //glEnable(GL_CULL_FACE);
     //glFrontFace(GL_CW);
@@ -149,10 +142,9 @@ void create_vbo() {
     GLuint *vao = &gui.vao;
 
     Vector3f vertices[3];
-    set_vector(&vertices[0], -1, -1, 0);
-    set_vector(&vertices[1], 0, 1, 0);
-    set_vector(&vertices[2], 1, -1, 0);
-
+    vector3f_set(&vertices[0], -0.5, -0.5, 0);
+    vector3f_set(&vertices[1], 0, 0.5, 0);
+    vector3f_set(&vertices[2], 0.5, -0.5, 0);
 
     glGenVertexArrays(1, vao);
     glGenBuffers(1, vbo);
