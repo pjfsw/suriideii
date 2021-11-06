@@ -23,6 +23,7 @@ typedef struct {
     int height;
     GLuint vao;
     GLuint vbo;
+    GLuint ibo;
     GLuint program;
     ShaderVariables variables;
 } Gui;
@@ -33,6 +34,11 @@ typedef struct {
     float scale;
     float delta;
 } App;
+
+typedef struct {
+    Vector3f position;
+    Vector3f color;
+} Vertex;
 
 Gui gui;
 App app;
@@ -110,11 +116,19 @@ void render() {
 
     glUniformMatrix4fv(gui.variables.rotation, 1, GL_TRUE, &rotation.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gui.ibo);
     glEnableClientState(GL_VERTEX_ARRAY);    
+    // Position
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, VECTOR3F_NUMBER_OF_COMPONENTS, GL_FLOAT, GL_FALSE, 0, NULL);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glVertexAttribPointer(0, VECTOR3F_NUMBER_OF_COMPONENTS, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
+
+    // Color
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, VECTOR3F_NUMBER_OF_COMPONENTS, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(Vector3f)));
+
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glDisableVertexAttribArray(0);    
+    glDisableVertexAttribArray(1);    
     glDisableClientState(GL_VERTEX_ARRAY);
     glutPostRedisplay();
 }
@@ -143,6 +157,12 @@ void reshape_func(int width, int height) {
     glViewport(0, 0, width, height);
 }
 
+void randomize_vertex_color(Vertex *v) {
+    v->color.x = (float)rand() / (float)RAND_MAX;
+    v->color.y = (float)rand() / (float)RAND_MAX;
+    v->color.z = (float)rand() / (float)RAND_MAX;
+}
+
 void create_vbo() {
     //glEnable(GL_CULL_FACE);
     //glFrontFace(GL_CW);
@@ -150,18 +170,34 @@ void create_vbo() {
 
     GLuint *vbo = &gui.vbo;
     GLuint *vao = &gui.vao;
+    GLuint *ibo = &gui.ibo;
 
-    Vector3f vertices[3];
-    float h = 0.433;
-    vector3f_set(&vertices[0], -0.5, -h, 0);
-    vector3f_set(&vertices[1], 0, h, 0);
-    vector3f_set(&vertices[2], 0.5, -h, 0);
+    Vertex vertices[4];
+    for (int i = 0; i < 4; i++) {
+        randomize_vertex_color(&vertices[i]);
+    }
+    double size = 0.5;
+    // Create coords for a square
+    vector3f_set(&vertices[0].position, -size, -size, 0);
+    vector3f_set(&vertices[1].position, size, -size, 0);
+    vector3f_set(&vertices[2].position, size, size, 0);
+    vector3f_set(&vertices[3].position, -size, size, 0);
 
     glGenVertexArrays(1, vao);
     glGenBuffers(1, vbo);
     glBindVertexArray(*vao);
     glBindBuffer(GL_ARRAY_BUFFER, *vbo);    
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Create indices for a square
+    unsigned int indices[] = {
+        0,1,2,
+        0,2,3
+    };
+    glGenBuffers(1, ibo);
+    // TODO vertex array?
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 }
 
 void destroy_vbo() {
