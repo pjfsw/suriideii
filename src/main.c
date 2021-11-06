@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "shader_program.h"
+
 #define REQ_MAJOR_VERSION 4
 #define REQ_MINOR_VERSION 2
 
@@ -31,85 +33,6 @@ void destroy_gui() {
     }
 }
 
-
-bool create_shader(GLuint shader_program, int shader_type, char *shader) {
-    GLuint shader_obj = glCreateShader(shader_type);
-    if (shader_obj == 0) {
-        fprintf(stderr, "Error creating shader type %d\n", shader_type);
-        return false;
-    }
-
-    const GLchar *p[1];
-    p[0] = shader;
-    GLint lengths[1];
-    lengths[0] = strlen(shader);
-
-    glShaderSource(shader_obj, 1, p, lengths);
-    glCompileShader(shader_obj);
-    
-    GLint success;
-    glGetShaderiv(shader_obj, GL_COMPILE_STATUS, &success);
-
-    if (success == 0) {
-        int log_size = 1024;
-        GLchar info_log[log_size];
-        glGetShaderInfoLog(shader_obj, log_size, NULL, info_log);
-        fprintf(stderr, "Error compiling shader type %d: '%s'\n", shader_type, info_log);
-        return false;
-    }
-    glAttachShader(shader_program, shader_obj);
-    return true;
-}
-
-bool compile_shaders() {
-    GLuint shader_program = glCreateProgram();
-    if (shader_program == 0) {
-        fprintf(stderr, "Failed to create shader program\n");
-        return false;
-    }
-    char vertex_shader[] = 
-        "#version 420 core\n"\
-        "layout (location = 0) in vec3 position;\n"\
-        "void main() {\n"\
-        "  gl_Position = vec4(0.5 * position.x, 0.5 * position.y, position.z, 1.0);\n"\
-        "}\n";
-    char fragment_shader[] = 
-        "#version 420 core\n"\
-        "out vec4 frag_color;\n"\
-        "void main() {\n"\
-        "  frag_color = vec4(1.0, 0.0, 0.0, 0.0);\n"\
-        "}\n";
-
-    if (!create_shader(shader_program, GL_VERTEX_SHADER, vertex_shader)) {
-        return false;
-    }
-    if (!create_shader(shader_program, GL_FRAGMENT_SHADER, fragment_shader)) {
-        return false;
-    }
-    glLinkProgram(shader_program);
-
-    GLint success;
-    int log_size = 1024;
-    GLchar info_log[log_size];
-    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
-    if (success == 0) {
-        glGetProgramInfoLog(shader_program, sizeof(info_log), NULL, info_log);
-        fprintf(stderr, "Error linking shader program: '%s'\n", info_log);
-        return false;
-    }
-
-    glValidateProgram(shader_program);
-    glGetProgramiv(shader_program, GL_VALIDATE_STATUS, &success);
-    if (success == 0) {
-        glGetProgramInfoLog(shader_program, sizeof(info_log), NULL, info_log);
-        fprintf(stderr, "Invalid shader program: '%s'\n", info_log);
-        return false;
-    }
-
-    glUseProgram(shader_program);
-
-    return true;
-}
 
 
 bool create_gui(int *argc, char **argv) {
@@ -145,7 +68,7 @@ bool create_gui(int *argc, char **argv) {
     }
     printf("GL Version %s\n", gl_version);
 
-    if (!compile_shaders()) {
+    if (!shader_program_build("shader.vs", "shader.fs")) {
         destroy_gui();
         return false;
     }

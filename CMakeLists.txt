@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 project(suriideii)
 
 set(CMAKE_C_STANDARD 11)
+set(OpenGL_GL_PREFERENCE GLVND)
 add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 include(FindPkgConfig)
@@ -18,10 +19,13 @@ include_directories(${GLEW_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_
 
 add_executable(suriideii
     src/main.c
+    src/shader_program.c
 )
 #configure_file(resources/font.png ./font.png COPYONLY)
 #configure_file(resources/pixla.png ./pixla.png COPYONLY)
 
+configure_file(resources/shader.vs ./shader.vs COPYONLY)
+configure_file(resources/shader.fs ./shader.fs COPYONLY)
+
 target_link_libraries(suriideii ${GLEW_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
-#target_link_libraries(pixla3 ${SDL2_LIBRARIES} ${SDL2IMAGE_LIBRARIES} m)
 
