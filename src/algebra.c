@@ -40,7 +40,19 @@ void matrix4f_translation(Matrix4f *m, float x, float y, float z) {
 void matrix4f_rotation(Matrix4f *m, float ax, float ay, float az) {
     ax = ax;
     ay = ay;
-    matrix4f_set(m, cos(az), -sin(az), 0, 0, sin(az), cos(az),0,0, 0,0,1,0, 0,0,0,1);
+    double a = az;
+    double b = ay;
+    double c = ax;
+    //matrix4f_set(m, cos(az), -sin(az), 0, 0, sin(az), cos(az),0,0, 0,0,1,0, 0,0,0,1);
+    matrix4f_set(m,
+        cos(a) * cos(b), cos(a) * sin(b) * sin(c) - sin(a) * cos(c),
+        cos(a) * sin(b) * cos(c) + sin(a) * sin(c), 0,
+
+        sin(a) * cos(b), sin(a) * sin(b) * sin(c) + cos(a) * cos(c),
+        sin(a) * sin(b) * cos(c) - cos(a) * sin(c), 0,
+
+        -sin(b), cos(b) * sin(c), cos(b) * cos(c), 0, 
+        0,0,0,1);
 }
 
 void matrix4f_scale(Matrix4f *m, float sx, float sy, float sz) {
@@ -58,4 +70,10 @@ void matrix4f_multiply(Matrix4f *lhs, Matrix4f *rhs, Matrix4f *target) {
         }
     }
     memcpy(target->m, dst, sizeof(float) * 16);
+}
+
+void matrix4f_perspective(Matrix4f *m, float x_fov, float y_fov) {
+    float x2 = 0.5 * x_fov;
+    float y2 = 0.5 * y_fov;
+    matrix4f_set(m, 1/tan(x2), 0, 0, 0, 0, 1/tan(y2), 0, 0, 0,0,1,0,0,0,1,0);
 }
