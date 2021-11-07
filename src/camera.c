@@ -54,9 +54,15 @@ void camera_transform_rebuild(Camera *camera) {
     Vector3f v;
     vector3f_cross(&n, &u, &v);
 
-    matrix4f_set(&camera->m, 
-      u.x, u.y, u.z, -camera->position.x,
-      v.x, v.y, v.z, -camera->position.y,
-      n.x, n.y, n.z, -camera->position.z,
-      0, 0, 0, 1);
+    Matrix4f rotation; 
+    matrix4f_set(&rotation, 
+       u.x, u.y, u.z, 0,
+       v.x, v.y, v.z, 0,
+       n.x, n.y, n.z, 0,
+       0,   0,   0,   1
+    );
+
+    Matrix4f translation;
+    matrix4f_translation(&translation, -camera->position.x, -camera->position.y, -camera->position.z);
+    matrix4f_multiply_target(&rotation, &translation, &camera->m);
 }
