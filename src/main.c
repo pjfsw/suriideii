@@ -29,6 +29,7 @@ typedef struct {
     GLuint ibo;
     GLuint program;
     ShaderVariables variables;
+    Matrix4f perspective;
 } Gui;
 
 typedef struct {
@@ -45,7 +46,7 @@ typedef struct {
     int frame_time;
     float rotation;
     float pos_index;
-    double x_fov;
+    double fov;
     float perspective_a;
     float perspective_b;
     Mesh *mesh;
@@ -119,14 +120,9 @@ bool create_gui(int *argc, char **argv) {
 }
 
 void render() {
-    Matrix4f perspective;
-    float xfov = app.x_fov * M_PI/180.0;
-    float yfov = app.x_fov * M_PI * (float)(gui.height) / ((float)(gui.width) * 180.0);
-
-    matrix4f_perspective(&perspective, xfov, yfov, app.perspective_a, app.perspective_b);
     Matrix4f transform;    
     matrix4f_multiply_target(&app.camera.m, &app.transform.m, &transform);
-    matrix4f_multiply(&perspective, &transform);
+    matrix4f_multiply(&gui.perspective, &transform);
 
     glUniformMatrix4fv(gui.variables.transformation, 1, GL_TRUE, &transform.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
@@ -235,11 +231,19 @@ void keyboard_up_func(unsigned char key, int x, int y) {
 }
 
 
+void update_perspective_matrix() {
+    float fov = app.fov * M_PI/180.0;
+    float ar = (float)(gui.width) / (float)(gui.height);
+
+    matrix4f_perspective(&gui.perspective, fov, ar, app.perspective_a, app.perspective_b);
+}
+
 
 void reshape_func(int width, int height) {
     gui.width = width;
     gui.height = height;
     glViewport(0, 0, width, height);
+    update_perspective_matrix();
 }
 
 void create_vbo(Mesh *mesh) {
@@ -266,7 +270,7 @@ void destroy_vbo() {
 
 void init_app() {
     app.mesh = mesh_cube();
-    app.x_fov = 90;
+    app.fov = 90;
     float near_z = 1;
     float far_z = 20;
     float z_range = near_z - far_z;
@@ -274,6 +278,7 @@ void init_app() {
     app.perspective_b = 2.0f * far_z * near_z / z_range;
     camera_reset(&app.camera);
     transform_reset(&app.transform);
+    update_perspective_matrix();
 }
 
 int main(int argc, char **argv) {

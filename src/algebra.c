@@ -145,8 +145,7 @@ void matrix4f_multiply_target(Matrix4f *lhs, Matrix4f *rhs, Matrix4f *target) {
     _matrix4f_multiply(lhs->m, rhs->m, target->m);
 }
 
-void matrix4f_perspective(Matrix4f *m, float x_fov, float y_fov, float a, float b) {
-    float x2 = 0.5 * x_fov;
-    float y2 = 0.5 * y_fov;
-    matrix4f_set(m, 1/tan(x2), 0, 0, 0, 0, 1/tan(y2), 0, 0, 0,0,a,b,0,0,1,0);
+void matrix4f_perspective(Matrix4f *m, float fov, float ar, float a, float b) {
+    float tan_half_fov = 1/tan(0.5 * fov); 
+    matrix4f_set(m, 1/(tan_half_fov * ar), 0, 0, 0, 0, 1/tan_half_fov, 0, 0, 0,0,a,b,0,0,1,0);
 }
