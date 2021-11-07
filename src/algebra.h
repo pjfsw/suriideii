@@ -24,7 +24,7 @@ void matrix4f_scale(Matrix4f *m, float sx, float sy, float sz);
 
 void matrix4f_translation(Matrix4f *m, float x, float y, float z);
 
-void matrix4f_perspective(Matrix4f *m, float x_fov, float y_fov);
+void matrix4f_perspective(Matrix4f *m, float x_fov, float y_fov, float a, float b);
 
 void matrix4f_multiply(Matrix4f *lhs, Matrix4f *rhs, Matrix4f *target);
 

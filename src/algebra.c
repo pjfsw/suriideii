@@ -72,8 +72,8 @@ void matrix4f_multiply(Matrix4f *lhs, Matrix4f *rhs, Matrix4f *target) {
     memcpy(target->m, dst, sizeof(float) * 16);
 }
 
-void matrix4f_perspective(Matrix4f *m, float x_fov, float y_fov) {
+void matrix4f_perspective(Matrix4f *m, float x_fov, float y_fov, float a, float b) {
     float x2 = 0.5 * x_fov;
     float y2 = 0.5 * y_fov;
-    matrix4f_set(m, 1/tan(x2), 0, 0, 0, 0, 1/tan(y2), 0, 0, 0,0,1,0,0,0,1,0);
+    matrix4f_set(m, 1/tan(x2), 0, 0, 0, 0, 1/tan(y2), 0, 0, 0,0,a,b,0,0,1,0);
 }

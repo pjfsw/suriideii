@@ -31,8 +31,14 @@ typedef struct {
 typedef struct {
     int last_time;
     double delta_time;
+    int frames;
+    int frame_time;
     float rotation;
     float pos_index;
+    double x_fov;
+    double y_fov;
+    float perspective_a;
+    float perspective_b;
 } App;
 
 typedef struct {
@@ -116,16 +122,16 @@ void render() {
         app.pos_index -= double_pi;
     }
     Matrix4f scale;
-    float scale_amount = 0.2 + 0.5 * fabs(cos(app.pos_index));
+    float scale_amount = 0.9 + 0.2 * fabs(cos(app.pos_index));
     matrix4f_scale(&scale, scale_amount, scale_amount, scale_amount);
     Matrix4f rotation;
     matrix4f_rotation(&rotation, app.rotation, app.rotation,0);
     Matrix4f translation;
-    matrix4f_translation(&translation, 0.5*cos(app.pos_index), 0.5*sin(2*app.pos_index), 4.0);
+    matrix4f_translation(&translation, 0.5*cos(app.pos_index), 0.5*sin(2*app.pos_index), 2.0);
     Matrix4f perspective;
-    float xfov = 45.0 * M_PI/180.0;
-    float yfov = xfov;
-    matrix4f_perspective(&perspective, xfov, yfov);
+    float xfov = app.x_fov * M_PI/180.0;
+    float yfov = app.y_fov * M_PI/180.0;
+    matrix4f_perspective(&perspective, xfov, yfov, app.perspective_a, app.perspective_b);
     Matrix4f transform;    
     matrix4f_multiply(&rotation, &scale, &transform);
     matrix4f_multiply(&translation, &transform, &transform);
@@ -153,8 +159,16 @@ void render() {
 void display_func() {
     glClear(GL_COLOR_BUFFER_BIT);
     int time = glutGet(GLUT_ELAPSED_TIME);
-    app.delta_time = (double)(time-app.last_time)*0.001;
+    int diff = time-app.last_time;
+    app.delta_time = (double)(diff)*0.001;
     app.last_time = time;
+    app.frames++;
+    app.frame_time += diff;
+    if (app.frames > 100) {
+        printf("Frames %d, frame time %d ms, rate: %d fps\n", app.frames, app.frame_time, app.frames * 1000 / app.frame_time);
+        app.frame_time = 0;
+        app.frames = 0;
+    }
     render();
     glutSwapBuffers();
 }
@@ -171,6 +185,7 @@ void keyboard_func(unsigned char key, int x, int y) {
 void reshape_func(int width, int height) {
     gui.width = width;
     gui.height = height;
+    app.y_fov = app.x_fov * (float)(gui.height) / (float)(gui.width);
     glViewport(0, 0, width, height);
 }
 
@@ -251,6 +266,12 @@ int main(int argc, char **argv) {
     glutReshapeFunc(reshape_func);
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);    
     app.last_time = glutGet(GLUT_ELAPSED_TIME);
+    app.x_fov = app.y_fov = 90;
+    float near_z = 1;
+    float far_z = 10;
+    float z_range = near_z - far_z;
+    app.perspective_a = (-far_z - near_z) / z_range;
+    app.perspective_b = 2.0f * far_z * near_z / z_range;
 
     glutMainLoop();
     destroy_vbo();
