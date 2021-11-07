@@ -7,6 +7,7 @@
 #include <string.h>
 #include "algebra.h"
 #include "shader_program.h"
+#include "object.h"
 
 #define REQ_MAJOR_VERSION 4
 #define REQ_MINOR_VERSION 2
@@ -39,12 +40,8 @@ typedef struct {
     double y_fov;
     float perspective_a;
     float perspective_b;
+    Object *cube;
 } App;
-
-typedef struct {
-    Vector3f position;
-    Vector3f color;
-} Vertex;
 
 Gui gui;
 App app;
@@ -107,7 +104,6 @@ bool create_gui(int *argc, char **argv) {
         return false;
     }
 
-
     return true;
 }
 
@@ -127,7 +123,7 @@ void render() {
     Matrix4f rotation;
     matrix4f_rotation(&rotation, app.rotation, app.rotation,0);
     Matrix4f translation;
-    matrix4f_translation(&translation, 0.5*cos(app.pos_index), 0.5*sin(2*app.pos_index), 2.0);
+    matrix4f_translation(&translation, 0.5*cos(app.pos_index), 0.5*sin(2*app.pos_index), 4.0);
     Matrix4f perspective;
     float xfov = app.x_fov * M_PI/180.0;
     float yfov = app.y_fov * M_PI/180.0;
@@ -189,64 +185,22 @@ void reshape_func(int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void randomize_vertex_color(Vertex *v) {
-    v->color.x = 0.2 + 0.8 * (float)rand() / (float)RAND_MAX;
-    v->color.y = 0.2 + 0.8 * (float)rand() / (float)RAND_MAX;
-    v->color.z = 0.2 + 0.8 * (float)rand() / (float)RAND_MAX;
-}
-
-void create_vbo() {
+void create_vbo(Object *object) {
 
     GLuint *vbo = &gui.vbo;
     GLuint *vao = &gui.vao;
     GLuint *ibo = &gui.ibo;
 
-    Vertex vertices[8];
-    for (int i = 0; i < 8; i++) {
-        randomize_vertex_color(&vertices[i]);
-    }
-    double size = 0.5;
-    // Create coords for a square
-    vector3f_set(&vertices[0].position, -size, size, -size);
-    vector3f_set(&vertices[1].position, size, size, -size);
-    vector3f_set(&vertices[2].position, size, -size, -size);
-    vector3f_set(&vertices[3].position, -size, -size, -size);
-
-    vector3f_set(&vertices[4].position, -size, size, size);
-    vector3f_set(&vertices[5].position, size, size, size);
-    vector3f_set(&vertices[6].position, size, -size, size);
-    vector3f_set(&vertices[7].position, -size, -size, size);
-
     glGenVertexArrays(1, vao);
     glGenBuffers(1, vbo);
     glBindVertexArray(*vao);
     glBindBuffer(GL_ARRAY_BUFFER, *vbo);    
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, object->vertex_count*sizeof(Vertex), object->vertices, GL_STATIC_DRAW);
 
-    // Create indices for a cube
-    unsigned int indices[] = {
-        0,1,2, // front
-        0,2,3,
-
-        5,4,6, // back
-        4,7,6,
-
-        0,4,5, // top
-        0,5,1,
-
-        6,7,3,// bottom
-        2,6,3,
-
-        1,5,6, // right
-        1,6,2,
-
-        4,0,3, // left
-        4,3,7
-    };
     glGenBuffers(1, ibo);
     // TODO vertex array?
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, object->index_count*sizeof(int), object->indices, GL_STATIC_DRAW);
 }
 
 void destroy_vbo() {
@@ -260,7 +214,8 @@ int main(int argc, char **argv) {
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CW);
     glCullFace(GL_BACK);
-    create_vbo();
+    app.cube = object_cube();
+    create_vbo(app.cube);
     glutDisplayFunc(display_func); 
     glutKeyboardFunc(keyboard_func);
     glutReshapeFunc(reshape_func);
@@ -272,8 +227,8 @@ int main(int argc, char **argv) {
     float z_range = near_z - far_z;
     app.perspective_a = (-far_z - near_z) / z_range;
     app.perspective_b = 2.0f * far_z * near_z / z_range;
-
-    glutMainLoop();
+    glutMainLoop();    
     destroy_vbo();
+    object_destroy(app.cube);
     destroy_gui();
 }
