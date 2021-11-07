@@ -13,10 +13,15 @@ typedef struct {
 
 void vector3f_set(Vector3f *v, float x, float y, float z);
 
+void vector3f_zero(Vector3f *v);
+
+void vector3f_normalize(Vector3f *v);
+
+float vector3f_length(Vector3f *v);
+
 void matrix4f_set(Matrix4f *m, float m11, float m12, float m13, float m14,
     float m21, float m22, float m23, float m24, float m31, float m32, float m33,
     float m34, float m41, float m42, float m43, float m44);
-
 
 void matrix4f_rotation(Matrix4f *m, float ax, float ay, float az);
 

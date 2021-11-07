@@ -21,7 +21,8 @@ add_executable(suriideii
     src/main.c
     src/shader_program.c
     src/algebra.c
-    src/object.c
+    src/mesh.c
+    src/transform.c
 )
 #configure_file(resources/font.png ./font.png COPYONLY)
 #configure_file(resources/pixla.png ./pixla.png COPYONLY)

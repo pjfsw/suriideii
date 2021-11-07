@@ -8,6 +8,24 @@ void vector3f_set(Vector3f *v, float x, float y, float z) {
     v->z = z;
 }
 
+void vector3f_zero(Vector3f *v) {
+    v->x = 0;
+    v->y = 0;
+    v->z = 0;
+}
+
+float vector3f_length(Vector3f *v) {
+    return sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
+}
+
+void vector3f_normalize(Vector3f *v) {
+    float length = vector3f_length(v);
+
+    v->x = v->x / length;
+    v->y = v->y / length;
+    v->z = v->z / length;
+}
+
 void matrix4f_set(Matrix4f *m, float m11, float m12, float m13, float m14,
     float m21, float m22, float m23, float m24, float m31, float m32, float m33,
     float m34, float m41, float m42, float m43, float m44) {

@@ -1,5 +1,5 @@
-#ifndef _OBJECT_H_
-#define _OBJECT_H_
+#ifndef _MESH_H_
+#define _MESH_H_
 
 #include "algebra.h"
 
@@ -13,10 +13,10 @@ typedef struct {
     int vertex_count;        
     int *indices;
     int index_count;
-} Object;
+} Mesh;
 
-Object *object_cube();
+Mesh *mesh_cube();
 
-void object_destroy(Object *object);
+void mesh_destroy(Mesh *mesh);
 
 #endif

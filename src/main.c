@@ -6,8 +6,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "algebra.h"
+#include "mesh.h"
 #include "shader_program.h"
-#include "object.h"
+#include "transform.h"
 
 #define REQ_MAJOR_VERSION 4
 #define REQ_MINOR_VERSION 2
@@ -37,10 +38,10 @@ typedef struct {
     float rotation;
     float pos_index;
     double x_fov;
-    double y_fov;
     float perspective_a;
     float perspective_b;
-    Object *object;
+    Mesh *mesh;
+    Transform transform;
 } App;
 
 Gui gui;
@@ -108,30 +109,13 @@ bool create_gui(int *argc, char **argv) {
 }
 
 void render() {
-    app.rotation += app.delta_time;
-    float double_pi = 2.0f * M_PI;
-    if (app.rotation > double_pi) {
-        app.rotation -= double_pi;
-    }
-    app.pos_index += app.delta_time;
-    if (app.pos_index > double_pi) {
-        app.pos_index -= double_pi;
-    }
-    Matrix4f scale;
-    float scale_amount = 0.9 + 0.2 * fabs(cos(app.pos_index));
-    matrix4f_scale(&scale, scale_amount, scale_amount, scale_amount);
-    Matrix4f rotation;
-    matrix4f_rotation(&rotation, app.rotation, app.rotation,0);
-    Matrix4f translation;
-    matrix4f_translation(&translation, 0.5*cos(app.pos_index), 0.5*sin(2*app.pos_index), 4.0);
     Matrix4f perspective;
     float xfov = app.x_fov * M_PI/180.0;
-    float yfov = app.y_fov * M_PI/180.0;
+    float yfov = app.x_fov * M_PI * (float)(gui.height) / ((float)(gui.width) * 180.0);
+
     matrix4f_perspective(&perspective, xfov, yfov, app.perspective_a, app.perspective_b);
     Matrix4f transform;    
-    matrix4f_multiply(&rotation, &scale, &transform);
-    matrix4f_multiply(&translation, &transform, &transform);
-    matrix4f_multiply(&perspective, &transform, &transform);
+    matrix4f_multiply(&perspective, &app.transform.m, &transform);
 
     glUniformMatrix4fv(gui.variables.transformation, 1, GL_TRUE, &transform.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
@@ -145,11 +129,34 @@ void render() {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, VECTOR3F_NUMBER_OF_COMPONENTS, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(Vector3f)));
 
-    glDrawElements(GL_TRIANGLES, app.object->index_count, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, app.mesh->index_count, GL_UNSIGNED_INT, 0);
     glDisableVertexAttribArray(0);    
     glDisableVertexAttribArray(1);    
     glDisableClientState(GL_VERTEX_ARRAY);
     glutPostRedisplay();
+}
+
+void update_state() {
+    app.rotation += app.delta_time;
+    float double_pi = 2.0f * M_PI;
+    if (app.rotation > double_pi) {
+        app.rotation -= double_pi;
+    }
+    app.pos_index += app.delta_time;
+    if (app.pos_index > double_pi) {
+        app.pos_index -= double_pi;
+    }
+
+    app.transform.scale = 0.9 + 0.2 * fabs(cos(app.pos_index));
+    app.transform.rotation.x = app.rotation;
+    app.transform.rotation.y = app.rotation;
+    app.transform.rotation.z = app.rotation;
+
+    app.transform.position.x = 0.5*cos(app.pos_index);
+    app.transform.position.y = 0.5*sin(2*app.pos_index);
+    app.transform.position.z = 4.0;
+
+    transform_rebuild(&app.transform);
 }
 
 void display_func() {
@@ -165,6 +172,7 @@ void display_func() {
         app.frame_time = 0;
         app.frames = 0;
     }
+    update_state();
     render();
     glutSwapBuffers();
 }
@@ -181,11 +189,10 @@ void keyboard_func(unsigned char key, int x, int y) {
 void reshape_func(int width, int height) {
     gui.width = width;
     gui.height = height;
-    app.y_fov = app.x_fov * (float)(gui.height) / (float)(gui.width);
     glViewport(0, 0, width, height);
 }
 
-void create_vbo(Object *object) {
+void create_vbo(Mesh *mesh) {
 
     GLuint *vbo = &gui.vbo;
     GLuint *vao = &gui.vao;
@@ -195,12 +202,12 @@ void create_vbo(Object *object) {
     glGenBuffers(1, vbo);
     glBindVertexArray(*vao);
     glBindBuffer(GL_ARRAY_BUFFER, *vbo);    
-    glBufferData(GL_ARRAY_BUFFER, object->vertex_count*sizeof(Vertex), object->vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, mesh->vertex_count*sizeof(Vertex), mesh->vertices, GL_STATIC_DRAW);
 
     glGenBuffers(1, ibo);
     // TODO vertex array?
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, object->index_count*sizeof(int), object->indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->index_count*sizeof(int), mesh->indices, GL_STATIC_DRAW);
 }
 
 void destroy_vbo() {
@@ -214,14 +221,14 @@ int main(int argc, char **argv) {
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CW);
     glCullFace(GL_BACK);
-    app.object = object_cube();
-    create_vbo(app.object);
+    app.mesh = mesh_cube();
+    create_vbo(app.mesh);
     glutDisplayFunc(display_func); 
     glutKeyboardFunc(keyboard_func);
     glutReshapeFunc(reshape_func);
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);    
     app.last_time = glutGet(GLUT_ELAPSED_TIME);
-    app.x_fov = app.y_fov = 90;
+    app.x_fov = 90;
     float near_z = 1;
     float far_z = 10;
     float z_range = near_z - far_z;
@@ -229,6 +236,6 @@ int main(int argc, char **argv) {
     app.perspective_b = 2.0f * far_z * near_z / z_range;
     glutMainLoop();    
     destroy_vbo();
-    object_destroy(app.object);
+    mesh_destroy(app.mesh);
     destroy_gui();
 }

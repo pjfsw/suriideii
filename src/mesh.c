@@ -1,23 +1,23 @@
-#include "object.h"
+#include "mesh.h"
 
 #include <string.h>
 #include <stdlib.h>
 
 
-void _object_randomize_vertex_color(Vertex *v) {
+void _mesh_randomize_vertex_color(Vertex *v) {
     v->color.x = 0.2 + 0.8 * (float)rand() / (float)RAND_MAX;
     v->color.y = 0.2 + 0.8 * (float)rand() / (float)RAND_MAX;
     v->color.z = 0.2 + 0.8 * (float)rand() / (float)RAND_MAX;
 }
 
-Object *object_cube() {
-    Object *object = calloc(1, sizeof(Object));
-    object->vertex_count = 8;
-    object->vertices = calloc(object->vertex_count, sizeof(Vertex));
+Mesh *mesh_cube() {
+    Mesh *mesh = calloc(1, sizeof(Mesh));
+    mesh->vertex_count = 8;
+    mesh->vertices = calloc(mesh->vertex_count, sizeof(Vertex));
 
-    Vertex vertices[object->vertex_count];
-    for (int i = 0; i < object->vertex_count; i++) {
-        _object_randomize_vertex_color(&vertices[i]);
+    Vertex vertices[mesh->vertex_count];
+    for (int i = 0; i < mesh->vertex_count; i++) {
+        _mesh_randomize_vertex_color(&vertices[i]);
     }
     double size = 1.0;
     // Create coords for a square
@@ -31,10 +31,10 @@ Object *object_cube() {
     vector3f_set(&vertices[6].position, size, -size, size);
     vector3f_set(&vertices[7].position, -size, -size, size);
 
-    memcpy(object->vertices, vertices, sizeof(Vertex)*object->vertex_count);
+    memcpy(mesh->vertices, vertices, sizeof(Vertex)*mesh->vertex_count);
 
-    object->index_count = 36;
-    object->indices = calloc(object->index_count, sizeof(int));
+    mesh->index_count = 36;
+    mesh->indices = calloc(mesh->index_count, sizeof(int));
 
     // Create indices for a cube
     unsigned int indices[] = {
@@ -56,21 +56,21 @@ Object *object_cube() {
         4,0,3, // left
         4,3,7
     };
-    memcpy(object->indices, indices, sizeof(int)*object->index_count);
-    return object;
+    memcpy(mesh->indices, indices, sizeof(int)*mesh->index_count);
+    return mesh;
 }
 
-void object_destroy(Object *object) {
-    if (object == NULL) {
+void mesh_destroy(Mesh *mesh) {
+    if (mesh == NULL) {
         return;
     }
-    if (object->indices != NULL) {
-        free(object->indices);
+    if (mesh->indices != NULL) {
+        free(mesh->indices);
     }
-    if (object->vertices != NULL) {
-        free(object->vertices);
+    if (mesh->vertices != NULL) {
+        free(mesh->vertices);
     }
-    free(object);
+    free(mesh);
 }
 
 
