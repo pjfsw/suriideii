@@ -10,8 +10,8 @@ void _transform_build_matrix(Transform *transform) {
     Matrix4f translation;
     matrix4f_translation(&translation, transform->position.x, transform->position.y, transform->position.z);
 
-    matrix4f_multiply(&rotation, &scale, &transform->m);
-    matrix4f_multiply(&translation, &transform->m,  &transform->m);
+    matrix4f_multiply_target(&rotation, &scale, &transform->m);
+    matrix4f_multiply(&translation, &transform->m);
 }
 
 void transform_reset(Transform *transform) {

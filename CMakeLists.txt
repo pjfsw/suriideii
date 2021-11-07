@@ -23,6 +23,7 @@ add_executable(suriideii
     src/algebra.c
     src/mesh.c
     src/transform.c
+    src/camera.c
 )
 #configure_file(resources/font.png ./font.png COPYONLY)
 #configure_file(resources/pixla.png ./pixla.png COPYONLY)

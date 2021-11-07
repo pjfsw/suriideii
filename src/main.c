@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "algebra.h"
+#include "camera.h"
 #include "mesh.h"
 #include "shader_program.h"
 #include "transform.h"
@@ -31,6 +32,13 @@ typedef struct {
 } Gui;
 
 typedef struct {
+    bool forward;
+    bool backward;
+    bool left;
+    bool right;
+} Movement;
+
+typedef struct {
     int last_time;
     double delta_time;
     int frames;
@@ -42,6 +50,8 @@ typedef struct {
     float perspective_b;
     Mesh *mesh;
     Transform transform;
+    Camera camera;
+    Movement movement;
 } App;
 
 Gui gui;
@@ -115,7 +125,8 @@ void render() {
 
     matrix4f_perspective(&perspective, xfov, yfov, app.perspective_a, app.perspective_b);
     Matrix4f transform;    
-    matrix4f_multiply(&perspective, &app.transform.m, &transform);
+    matrix4f_multiply_target(&app.camera.m, &app.transform.m, &transform);
+    matrix4f_multiply(&perspective, &transform);
 
     glUniformMatrix4fv(gui.variables.transformation, 1, GL_TRUE, &transform.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
@@ -147,7 +158,7 @@ void update_state() {
         app.pos_index -= double_pi;
     }
 
-    app.transform.scale = 0.9 + 0.2 * fabs(cos(app.pos_index));
+    app.transform.scale = 1.0; // 0.9 + 0.2 * fabs(cos(app.pos_index));
     app.transform.rotation.x = app.rotation;
     app.transform.rotation.y = app.rotation;
     app.transform.rotation.z = app.rotation;
@@ -157,6 +168,18 @@ void update_state() {
     app.transform.position.z = 4.0;
 
     transform_rebuild(&app.transform);
+
+    if (app.movement.forward) {
+        camera_move(&app.camera, false, app.delta_time);
+    } else if (app.movement.backward) {
+        camera_move(&app.camera, true, app.delta_time);
+    }
+    if (app.movement.left) {
+        camera_move_left(&app.camera, app.delta_time);
+    } else if (app.movement.right) {
+        camera_move_right(&app.camera, app.delta_time);
+    }
+    camera_transform_rebuild(&app.camera);
 }
 
 void display_func() {
@@ -177,14 +200,41 @@ void display_func() {
     glutSwapBuffers();
 }
 
+void handle_camera_keys(unsigned char key, bool key_down) {
+    switch (key) {
+        case 'w':
+            app.movement.forward = key_down;
+            break;
+        case 's':
+            app.movement.backward = key_down;
+            break;
+        case 'a':
+            app.movement.left = key_down;
+            break;
+        case 'd':
+            app.movement.right = key_down;
+    }
+}
+
 void keyboard_func(unsigned char key, int x, int y) {
-    x = x;
-    y = y;
+    (void)x;
+    (void)y;
     if (key == 27) {
         glutLeaveMainLoop();
         gui.window = 0;
+        return;
     }
+    handle_camera_keys(key, true);
 }
+
+void keyboard_up_func(unsigned char key, int x, int y) {
+    (void)x;
+    (void)y;
+
+    handle_camera_keys(key, false);
+}
+
+
 
 void reshape_func(int width, int height) {
     gui.width = width;
@@ -214,6 +264,18 @@ void destroy_vbo() {
     glDeleteBuffers(1, &gui.vbo);
 }
 
+void init_app() {
+    app.mesh = mesh_cube();
+    app.x_fov = 90;
+    float near_z = 1;
+    float far_z = 20;
+    float z_range = near_z - far_z;
+    app.perspective_a = (-far_z - near_z) / z_range;
+    app.perspective_b = 2.0f * far_z * near_z / z_range;
+    camera_reset(&app.camera);
+    transform_reset(&app.transform);
+}
+
 int main(int argc, char **argv) {
     if (!create_gui(&argc, argv)) {
         return 1;
@@ -221,19 +283,15 @@ int main(int argc, char **argv) {
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CW);
     glCullFace(GL_BACK);
-    app.mesh = mesh_cube();
+    init_app();
     create_vbo(app.mesh);
     glutDisplayFunc(display_func); 
     glutKeyboardFunc(keyboard_func);
+//    glutSpecialFunc(special_func);
+    glutKeyboardUpFunc(keyboard_up_func);
     glutReshapeFunc(reshape_func);
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);    
     app.last_time = glutGet(GLUT_ELAPSED_TIME);
-    app.x_fov = 90;
-    float near_z = 1;
-    float far_z = 10;
-    float z_range = near_z - far_z;
-    app.perspective_a = (-far_z - near_z) / z_range;
-    app.perspective_b = 2.0f * far_z * near_z / z_range;
     glutMainLoop();    
     destroy_vbo();
     mesh_destroy(app.mesh);
