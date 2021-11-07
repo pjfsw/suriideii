@@ -40,7 +40,7 @@ typedef struct {
     double y_fov;
     float perspective_a;
     float perspective_b;
-    Object *cube;
+    Object *object;
 } App;
 
 Gui gui;
@@ -145,7 +145,7 @@ void render() {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, VECTOR3F_NUMBER_OF_COMPONENTS, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(Vector3f)));
 
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, app.object->index_count, GL_UNSIGNED_INT, 0);
     glDisableVertexAttribArray(0);    
     glDisableVertexAttribArray(1);    
     glDisableClientState(GL_VERTEX_ARRAY);
@@ -214,8 +214,8 @@ int main(int argc, char **argv) {
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CW);
     glCullFace(GL_BACK);
-    app.cube = object_cube();
-    create_vbo(app.cube);
+    app.object = object_cube();
+    create_vbo(app.object);
     glutDisplayFunc(display_func); 
     glutKeyboardFunc(keyboard_func);
     glutReshapeFunc(reshape_func);
@@ -229,6 +229,6 @@ int main(int argc, char **argv) {
     app.perspective_b = 2.0f * far_z * near_z / z_range;
     glutMainLoop();    
     destroy_vbo();
-    object_destroy(app.cube);
+    object_destroy(app.object);
     destroy_gui();
 }
