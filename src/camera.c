@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <GL/freeglut_std.h>
 #include "algebra.h"
@@ -47,6 +48,13 @@ void camera_move_right(Camera *camera, double delta_time) {
 void camera_look(Camera *camera, float dx, float dy) {
     camera->angle_h += dx;
     camera->angle_v += dy;
+    float max_vertical = 0.25 * M_PI;
+
+    if (camera->angle_v > max_vertical) {
+        camera->angle_v = max_vertical;
+    } else if (camera->angle_v < -max_vertical) {
+        camera->angle_v = -max_vertical;
+    }
 
     Vector3f y_axis;
     vector3f_y(&y_axis, 1.0f);
