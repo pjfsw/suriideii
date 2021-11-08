@@ -40,6 +40,11 @@ typedef struct {
 } Movement;
 
 typedef struct {
+    int x;
+    int y;
+} Mouse;
+
+typedef struct {
     int last_time;
     double delta_time;
     int frames;
@@ -52,7 +57,8 @@ typedef struct {
     Mesh *mesh;
     Transform transform;
     Camera camera;
-    Movement movement;
+    Movement movement;    
+    Mouse mouse;
 } App;
 
 Gui gui;
@@ -159,8 +165,8 @@ void update_state() {
     app.transform.rotation.y = app.rotation;
     app.transform.rotation.z = app.rotation;
 
-    app.transform.position.x = 0.5*cos(app.pos_index);
-    app.transform.position.y = 0.5*sin(2*app.pos_index);
+    app.transform.position.x = 0;//0.5*cos(app.pos_index);
+    app.transform.position.y = 0;//0.5*sin(2*app.pos_index);
     app.transform.position.z = 4.0;
 
     transform_rebuild(&app.transform);
@@ -231,6 +237,15 @@ void keyboard_up_func(unsigned char key, int x, int y) {
 }
 
 
+void passive_motion_func(int x, int y) {
+    float delta_x = (float)(x-app.mouse.x)/400.0f;
+    float delta_y = (float)(y-app.mouse.y)/1000.0f;
+    app.mouse.x = x;
+    app.mouse.y = y;
+
+    camera_look(&app.camera, delta_x, delta_y);
+}
+
 void update_perspective_matrix() {
     float fov = app.fov * M_PI/180.0;
     float ar = (float)(gui.width) / (float)(gui.height);
@@ -295,6 +310,9 @@ int main(int argc, char **argv) {
 //    glutSpecialFunc(special_func);
     glutKeyboardUpFunc(keyboard_up_func);
     glutReshapeFunc(reshape_func);
+    glutPassiveMotionFunc(passive_motion_func);
+    glutFullScreen();
+    glutSetCursor(GLUT_CURSOR_NONE);
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);    
     app.last_time = glutGet(GLUT_ELAPSED_TIME);
     glutMainLoop();    

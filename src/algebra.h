@@ -11,6 +11,14 @@ typedef struct {
     float m[4][4];
 } Matrix4f;
 
+typedef struct {
+    float x;
+    float y;
+    float z;
+    float w;
+} Quaternion;
+
+
 void vector3f_set(Vector3f *v, float x, float y, float z);
 
 void vector3f_zero(Vector3f *v);
@@ -21,10 +29,11 @@ void vector3f_y(Vector3f *v, float y);
 
 void vector3f_z(Vector3f *v, float z);
 
-
 void vector3f_normalize(Vector3f *v);
 
 float vector3f_length(Vector3f *v);
+
+void vector3f_rotate(Vector3f *to_rotate, float angle, Vector3f *axis);
 
 // Returns target
 Vector3f *vector3f_copy(Vector3f *src, Vector3f *target);
@@ -57,5 +66,21 @@ void matrix4f_multiply(Matrix4f *lhs, Matrix4f *rhs);
 // target = lhs * rhs
 void matrix4f_multiply_target(Matrix4f *lhs, Matrix4f *rhs, Matrix4f *target);
 
+void quaternion_set(Quaternion *quaternion, float x, float y, float z, float w);
+
+// 
+void quaternion_from_vector(Quaternion *quaternion, float angle, Vector3f *v);
+
+// Normalizes the quaternion
+void quaternion_normalize(Quaternion *quaternion);
+
+// Creates the conjugate of src in target and returns target
+Quaternion *quaternion_conjugate(Quaternion *src, Quaternion *target);
+
+// Multiplys Q * V and stores in target, returns target
+Quaternion *quaternion_multiply_vector(Quaternion *q, Vector3f *v, Quaternion *target);
+
+// Multiplys Q1 (lhs) * Q2 (rhs) and stores in target, returns target
+Quaternion *quaternion_multiply_quaternion(Quaternion *lhs, Quaternion *rhs, Quaternion *target);
 
 #endif

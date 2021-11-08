@@ -43,6 +43,31 @@ void camera_move_right(Camera *camera, double delta_time) {
     vector3f_add(&right, &camera->position);
 }
 
+// Normalized screen coordinates
+void camera_look(Camera *camera, float dx, float dy) {
+    camera->angle_h += dx;
+    camera->angle_v += dy;
+
+    Vector3f y_axis;
+    vector3f_y(&y_axis, 1.0f);
+
+    Vector3f view;
+    // Rotate horizontal angle around the Y-axis
+    vector3f_x(&view, 1.0f);
+    vector3f_rotate(&view, camera->angle_h, &y_axis);
+    vector3f_normalize(&view);
+
+    // Rotate vertical angle around the X-axis
+    Vector3f u;
+    vector3f_cross(&y_axis, &view, &u);
+    vector3f_normalize(&u);
+    vector3f_rotate(&view, camera->angle_v, &u);
+
+    vector3f_copy(&view, &camera->target);
+    vector3f_cross(&camera->target, &u, &camera->up);
+    vector3f_normalize(&camera->up);
+}
+
 
 void camera_transform_rebuild(Camera *camera) {
     Vector3f n;

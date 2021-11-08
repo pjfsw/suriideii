@@ -10,6 +10,8 @@ typedef struct {
     Vector3f target;
     Vector3f up;
     Matrix4f m;
+    float angle_h;
+    float angle_v;
 } Camera;
 
 void camera_reset(Camera *camera);
@@ -20,7 +22,11 @@ void camera_move_left(Camera *camera, double delta_time);
 
 void camera_move_right(Camera *camera, double delta_time);
 
+// Normalized screen coordinates
+void camera_look(Camera *camera, float dx, float dy);
+
 void camera_transform_rebuild(Camera *camera);
+
 
 #endif
 

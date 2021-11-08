@@ -44,6 +44,20 @@ void vector3f_normalize(Vector3f *v) {
     v->z = v->z / length;
 }
 
+void vector3f_rotate(Vector3f *to_rotate, float angle, Vector3f *axis) {
+    Quaternion rotation_q;
+    quaternion_from_vector(&rotation_q, angle, axis);
+    Quaternion conjugate_q;
+    quaternion_conjugate(&rotation_q, &conjugate_q);
+    Quaternion w;
+    quaternion_multiply_vector(&rotation_q, to_rotate, &w);
+    Quaternion w2;
+    quaternion_multiply_quaternion(&w, &conjugate_q, &w2);
+    to_rotate->x = w2.x;
+    to_rotate->y = w2.y;
+    to_rotate->z = w2.z;
+}
+
 Vector3f *vector3f_copy(Vector3f *src, Vector3f *target) {
     target->x = src->x;
     target->y = src->y;
@@ -148,4 +162,62 @@ void matrix4f_multiply_target(Matrix4f *lhs, Matrix4f *rhs, Matrix4f *target) {
 void matrix4f_perspective(Matrix4f *m, float fov, float ar, float a, float b) {
     float tan_half_fov = 1/tan(0.5 * fov); 
     matrix4f_set(m, 1/(tan_half_fov * ar), 0, 0, 0, 0, 1/tan_half_fov, 0, 0, 0,0,a,b,0,0,1,0);
+}
+
+void quaternion_set(Quaternion *quaternion, float x, float y, float z, float w) {
+    quaternion->x = x;
+    quaternion->y = y;
+    quaternion->z = z;
+    quaternion->w = w;
+}
+
+void quaternion_from_vector(Quaternion *quaternion, float angle, Vector3f *v) {
+    float half_angle = angle / 2.0f;
+    float sin_half_angle = sinf(half_angle);
+    float cos_half_angle = cosf(half_angle);
+
+    quaternion->x = v->x * sin_half_angle;
+    quaternion->y = v->y * sin_half_angle;
+    quaternion->z = v->z * sin_half_angle;
+    quaternion->w = cos_half_angle;
+}
+
+void quaternion_normalize(Quaternion *quaternion) {
+    float length =
+        sqrtf(quaternion->x * quaternion->x + quaternion->y * quaternion->y +
+              quaternion->z + quaternion->z + quaternion->w + quaternion->w);
+
+    quaternion->x /= length;
+    quaternion->y /= length;
+    quaternion->z /= length;
+    quaternion->w /= length;
+}
+
+Quaternion *quaternion_conjugate(Quaternion *src, Quaternion *target) {
+    target->x = -src->x;
+    target->y = -src->y;
+    target->z = -src->z;
+    target->w = src->w;    
+    return target;
+}
+
+// Multiplys Q (lhs) * V (rhs) and stores in target, returns target
+Quaternion *quaternion_multiply_vector(Quaternion *q, Vector3f *v, Quaternion *target) {
+    target->w = -(q->x * v->x) - (q->y * v->y) - (q->z * v->z);
+    target->x = (q->w * v->x) + (q->y * v->z) - (q->z * v->y);
+    target->y = (q->w * v->y) + (q->z * v->x) - (q->x * v->z);
+    target->z = (q->w * v->z) + (q->x * v->y) - (q->y * v->x);
+
+    return target;
+}
+
+
+// Multiplys Q1 (lhs) * Q2 (rhs) and stores in target, returns target
+Quaternion *quaternion_multiply_quaternion(Quaternion *lhs, Quaternion *rhs, Quaternion *target) {
+    target->w = (lhs->w * rhs->w) - (lhs->x * rhs->x) - (lhs->y * rhs->y) - (lhs->z * rhs->z);
+    target->x = (lhs->x * rhs->w) + (lhs->w * rhs->x) + (lhs->y * rhs->z) - (lhs->z * rhs->y);
+    target->y = (lhs->y * rhs->w) + (lhs->w * rhs->y) + (lhs->z * rhs->x) - (lhs->x * rhs->z);
+    target->z = (lhs->z * rhs->w) + (lhs->w * rhs->z) + (lhs->x * rhs->y) - (lhs->y * rhs->x);
+    
+    return target;    
 }
