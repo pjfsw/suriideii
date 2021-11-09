@@ -12,13 +12,9 @@ pkg_search_module(SDL2IMAGE REQUIRED SDL2_image>=2.0.0)
 
 find_package(SDL2 REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(GLUT REQUIRED)
 find_package(GLEW REQUIRED)
 
-#pkg_search_module(SDL2IMAGE REQUIRED SDL2_image>=2.0.0)
-
-#find_package(SDL2 REQUIRED)
-include_directories(${GLEW_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} ${SDL2IMAGE_INCLUDE_DIRS})
+include_directories(${GLEW_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} ${SDL2IMAGE_INCLUDE_DIRS})
 
 add_executable(suriideii
     src/main.c
@@ -28,11 +24,9 @@ add_executable(suriideii
     src/transform.c
     src/camera.c
 )
-#configure_file(resources/font.png ./font.png COPYONLY)
-#configure_file(resources/pixla.png ./pixla.png COPYONLY)
 
 configure_file(resources/shader.vs ./shader.vs COPYONLY)
 configure_file(resources/shader.fs ./shader.fs COPYONLY)
 
-target_link_libraries(suriideii ${SDL2_LIBRARIES} ${SDL2IMAGE_LIBRARIES} ${GLEW_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} m )
+target_link_libraries(suriideii ${SDL2_LIBRARIES} ${SDL2IMAGE_LIBRARIES} ${GLEW_LIBRARIES} ${OPENGL_LIBRARIES} m )
 
