@@ -1,6 +1,5 @@
 #include <math.h>
 #include <stdio.h>
-#include <GL/freeglut_std.h>
 #include "algebra.h"
 #include "camera.h"
 

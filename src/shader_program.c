@@ -39,14 +39,18 @@ GLuint _sp_compile_shaders(char *vertex_shader, char *fragment_shader) {
         fprintf(stderr, "Failed to create shader program\n");
         return 0;
     }
-
+    printf("Created program\n");
     if (!_sp_create_shader(shader_program, GL_VERTEX_SHADER, vertex_shader)) {
         return 0;
     }
+    printf("Created vertex shader\n");
+
     if (!_sp_create_shader(shader_program, GL_FRAGMENT_SHADER, fragment_shader)) {
         return 0;
     }
+    printf("Created fragment shader\n");
     glLinkProgram(shader_program);
+    printf("Linked shader programs\n");
 
     GLint success;
     int log_size = 1024;
@@ -92,13 +96,16 @@ GLuint shader_program_build(char *vs_name, char *fs_name) {
     if (vertex_shader == NULL) {
         return 0;
     }
+    printf("Loaded vertex shader %s\n", vs_name);
     char *fragment_shader = _load_file(fs_name);
     if (fragment_shader == NULL) {
         free(vertex_shader);
         return 0;
     }
+    printf("Loaded fragment shader %s\n", fs_name);
 
     GLuint program = _sp_compile_shaders(vertex_shader, fragment_shader);
+    printf("Compiled shaders\n");
     free(vertex_shader);
     free(fragment_shader);
     return program;

@@ -161,7 +161,7 @@ void matrix4f_multiply_target(Matrix4f *lhs, Matrix4f *rhs, Matrix4f *target) {
 
 void matrix4f_perspective(Matrix4f *m, float fov, float ar, float a, float b) {
     float tan_half_fov = 1/tan(0.5 * fov); 
-    matrix4f_set(m, 1/(tan_half_fov * ar), 0, 0, 0, 0, 1/tan_half_fov, 0, 0, 0,0,a,b,0,0,1,0);
+    matrix4f_set(m, 1/(tan_half_fov), 0, 0, 0, 0, 1/(tan_half_fov * ar), 0, 0, 0,0,a,b,0,0,1,0);
 }
 
 void quaternion_set(Quaternion *quaternion, float x, float y, float z, float w) {

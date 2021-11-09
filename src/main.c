@@ -1,6 +1,5 @@
 #include <GL/glew.h>
-#include <GL/glut.h>
-#include <GL/freeglut_ext.h>
+#include <SDL2/SDL.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -21,7 +20,6 @@ typedef struct {
 } ShaderVariables;
 
 typedef struct {
-    int window;
     int width;
     int height;
     GLuint vao;
@@ -30,6 +28,8 @@ typedef struct {
     GLuint program;
     ShaderVariables variables;
     Matrix4f perspective;
+    SDL_Window *window;
+    SDL_GLContext context;
 } Gui;
 
 typedef struct {
@@ -38,12 +38,6 @@ typedef struct {
     bool left;
     bool right;
 } Movement;
-
-typedef struct {
-    int x;
-    int y;
-    bool warp;
-} Mouse;
 
 typedef struct {
     int last_time;
@@ -59,62 +53,98 @@ typedef struct {
     Transform transform;
     Camera camera;
     Movement movement;    
-    Mouse mouse;
 } App;
 
 Gui gui;
 App app;
 
 void destroy_gui() {
-    if (gui.window > 0) {
-        glutDestroyWindow(gui.window);
+    if (gui.window != NULL) {
+        SDL_DestroyWindow(gui.window);
     }
+    SDL_Quit();
+}
+
+void update_window_size() {
+    glViewport(0, 0, gui.width, gui.height);
+
+    float fov = app.fov * M_PI/180.0;
+    float ar = (float)(gui.height) / (float)(gui.width);
+
+    matrix4f_perspective(&gui.perspective, fov, ar, app.perspective_a, app.perspective_b);
 }
 
 
-
 bool create_gui(int *argc, char **argv) {
-    glutInit(argc, argv);
-    memset(&gui, 0, sizeof(Gui));
-    int scrw = glutGet(GLUT_SCREEN_WIDTH);
-    int scrh = glutGet(GLUT_SCREEN_HEIGHT);    
-    printf("Screen width: %d\n", scrw);
-    printf("Screen height: %d\n", scrh);
-    gui.width = scrw * 5 / 6;
-    gui.height = scrh * 5 / 6;
-    if (gui.width < gui.height) {
-        gui.height = gui.width;
-    } else {
-        gui.width = gui.height;
+    (void)argc;
+    (void)argv;
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0) {
+        fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
+        return false;
     }
+    memset(&gui, 0, sizeof(Gui));
 
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE/* | GLUT_DEPTH*/);
-    glutInitWindowSize(gui.width, gui.height);
-    glutInitWindowPosition((scrw-gui.width)/2, (scrh-gui.height)/2);
-    glutInitContextVersion(REQ_MAJOR_VERSION, REQ_MINOR_VERSION);
-    glutInitContextProfile(GLUT_CORE_PROFILE);
-    gui.window = glutCreateWindow("SURIIdeII");    
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, REQ_MAJOR_VERSION);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, REQ_MINOR_VERSION);
+    SDL_GL_SetAttribute(
+        SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
+    SDL_DisplayMode dm;
+    SDL_GetCurrentDisplayMode(0, &dm);
+    printf("Display reports size %dx%d\n", dm.w, dm.h);
+    gui.width = dm.w;
+    gui.height = dm.h;
+    gui.window = SDL_CreateWindow("The Window Name", 0, 0, gui.width, gui.height,
+        SDL_WINDOW_OPENGL |  SDL_WINDOW_FULLSCREEN_DESKTOP);
+
+    if (gui.window == NULL) {
+        fprintf(stderr, "Failed to create window: %s\n", SDL_GetError());
+        destroy_gui();
+        return false;
+    }
+    if ((gui.context = SDL_GL_CreateContext(gui.window)) == NULL) {
+        fprintf(stderr, "Failed to create GL context: %s\n", SDL_GetError());
+        destroy_gui();
+        return false;
+    }
+    int major;
+    int minor;
+    SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &major);
+    SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minor);
+    printf("OpenGL version %d.%d\n", major, minor);
+    int r;
+    int g;
+    int b;
+    SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &r);
+    SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &g);
+    SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &b);
+
+    printf("Color depth R=%d, G=%d, B=%d\n", r, g, b);
+
+    glewExperimental = true;
     GLenum res = glewInit();
     if (res != GLEW_OK)
     {
-        fprintf(stderr, "Error: '%s'\n", glewGetErrorString(res));
+        fprintf(stderr, "glew Init: '%s'\n", glewGetErrorString(res));
         return false;
     }    
 
     const char *gl_version = (const char*)glGetString(GL_VERSION);
-    if (gl_version == NULL || gui.window < 1) {
-        fprintf(stderr, "Failed to create a window\n");
+    if (gl_version == NULL) {
         fprintf(stderr, "OpenGL %d.%d+ required\n", REQ_MAJOR_VERSION, REQ_MINOR_VERSION);
         destroy_gui();
         return false;
     }
     printf("GL Version %s\n", gl_version);
 
+    printf("Loading shaders\n");
     if (!(gui.program = shader_program_build("shader.vs", "shader.fs"))) {
         destroy_gui();
         return false;
     }
+
+    printf("Loading location\n");
 
     gui.variables.transformation = glGetUniformLocation(gui.program, "gTransformation");
     if (gui.variables.transformation < 0) {
@@ -123,6 +153,7 @@ bool create_gui(int *argc, char **argv) {
         return false;
     }
 
+    printf("Init done\n");
     return true;
 }
 
@@ -147,7 +178,6 @@ void render() {
     glDisableVertexAttribArray(0);    
     glDisableVertexAttribArray(1);    
     glDisableClientState(GL_VERTEX_ARRAY);
-    glutPostRedisplay();
 }
 
 void update_state() {
@@ -185,24 +215,6 @@ void update_state() {
     camera_transform_rebuild(&app.camera);
 }
 
-void display_func() {
-    glClear(GL_COLOR_BUFFER_BIT);
-    int time = glutGet(GLUT_ELAPSED_TIME);
-    int diff = time-app.last_time;
-    app.delta_time = (double)(diff)*0.001;
-    app.last_time = time;
-    app.frames++;
-    app.frame_time += diff;
-    if (app.frames > 100) {
-        printf("Frames %d, frame time %d ms, rate: %d fps\n", app.frames, app.frame_time, app.frames * 1000 / app.frame_time);
-        app.frame_time = 0;
-        app.frames = 0;
-    }
-    update_state();
-    render();
-    glutSwapBuffers();
-}
-
 void handle_camera_keys(unsigned char key, bool key_down) {
     switch (key) {
         case 'w':
@@ -219,64 +231,32 @@ void handle_camera_keys(unsigned char key, bool key_down) {
     }
 }
 
-void keyboard_func(unsigned char key, int x, int y) {
-    (void)x;
-    (void)y;
-    if (key == 27) {
-        glutLeaveMainLoop();
-        gui.window = 0;
-        return;
-    }
-    handle_camera_keys(key, true);
-}
+void mouse_motion(int x, int y) {
+    int delta_x = x;
+    int delta_y = y;
 
-void keyboard_up_func(unsigned char key, int x, int y) {
-    (void)x;
-    (void)y;
-
-    handle_camera_keys(key, false);
-}
-
-
-void passive_motion_func(int x, int y) {
-    Mouse *mouse = &app.mouse;
-
-    int delta_x = x-mouse->x;
-    int delta_y = y-mouse->y;
-
-    float dx = (float)(delta_x)/800.0f;
-    float dy = (float)(delta_y)/2000.0f;
-
-    int margin = 10;
-
-    if (delta_x == 0) {
-        if (x < margin) {
-            dx = -0.5 * app.delta_time;
-        }
-        if (x > gui.width - margin) {
-            dx = 0.5 * app.delta_time;
-        }
-    } 
+    float dx = (float)(delta_x)/320.0f;
+    float dy = (float)(delta_y)/800.0f;
 
     camera_look(&app.camera, dx, dy);
-
-    mouse->x = x;
-    mouse->y = y;    
 }
 
-void update_perspective_matrix() {
-    float fov = app.fov * M_PI/180.0;
-    float ar = (float)(gui.width) / (float)(gui.height);
-
-    matrix4f_perspective(&gui.perspective, fov, ar, app.perspective_a, app.perspective_b);
-}
-
-
-void reshape_func(int width, int height) {
-    gui.width = width;
-    gui.height = height;
-    glViewport(0, 0, width, height);
-    update_perspective_matrix();
+void display_func() {
+    int time = SDL_GetTicks();
+    int diff = time-app.last_time;
+    app.delta_time = (double)(diff)*0.001;
+    app.last_time = time;
+    app.frames++;
+    app.frame_time += diff;
+    if (app.frames > 100) {
+        printf("Frame rate: %d fps\n", app.frames * 1000 / app.frame_time);
+        app.frame_time = 0;
+        app.frames = 0;
+    }
+    update_state();
+    glClear(GL_COLOR_BUFFER_BIT);
+    render();
+    SDL_GL_SwapWindow(gui.window);
 }
 
 void create_vbo(Mesh *mesh) {
@@ -309,10 +289,36 @@ void init_app() {
     float z_range = near_z - far_z;
     app.perspective_a = (-far_z - near_z) / z_range;
     app.perspective_b = 2.0f * far_z * near_z / z_range;
+    update_window_size();
     camera_reset(&app.camera);
     transform_reset(&app.transform);
-    update_perspective_matrix();
 }
+
+void loop() {
+    while (true) {
+        SDL_Event e;
+        bool down;
+        while (SDL_PollEvent(&e)) {
+            switch (e.type) {
+                case SDL_QUIT:
+                    return;
+                case SDL_KEYDOWN:
+                case SDL_KEYUP:
+                    down = e.type == SDL_KEYDOWN;
+                    if (down && e.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                        return;
+                    }
+                    handle_camera_keys((char)e.key.keysym.sym, down);
+                    break;
+                case SDL_MOUSEMOTION:
+                    mouse_motion(e.motion.xrel, e.motion.yrel);
+                    break;
+            }
+        }
+        display_func();
+    }
+}
+
 
 int main(int argc, char **argv) {
     if (!create_gui(&argc, argv)) {
@@ -323,20 +329,12 @@ int main(int argc, char **argv) {
     glCullFace(GL_BACK);
     init_app();
     create_vbo(app.mesh);
-    glutDisplayFunc(display_func); 
-    glutKeyboardFunc(keyboard_func);
-//    glutSpecialFunc(special_func);
-    glutKeyboardUpFunc(keyboard_up_func);
-    app.mouse.x = gui.width / 2;
-    app.mouse.y = gui.height / 2;
-    glutWarpPointer(app.mouse.x, app.mouse.y);
-    glutReshapeFunc(reshape_func);
-    glutPassiveMotionFunc(passive_motion_func);
-    glutFullScreen();
-    //glutSetCursor(GLUT_CURSOR_NONE);
-    glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);    
-    app.last_time = glutGet(GLUT_ELAPSED_TIME);
-    glutMainLoop();    
+    SDL_SetRelativeMouseMode(true);
+    SDL_GL_SetSwapInterval(1);    
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    SDL_GL_SwapWindow(gui.window);
+    loop();
     destroy_vbo();
     mesh_destroy(app.mesh);
     destroy_gui();
