@@ -3,10 +3,34 @@
 #include "algebra.h"
 #include "camera.h"
 
+void _camera_set_angle(Camera *camera) {
+    Vector3f h_target;
+    vector3f_set(&h_target, camera->target.x, 0, camera->target.z);
+    vector3f_normalize(&h_target);
+    
+    float angle = asin(fabsf(h_target.z));
+    if (h_target.z >= 0) {
+        if (h_target.x >= 0) {
+            camera->angle_h = 2.0f * M_PI - angle;
+        } else {
+            camera->angle_h = M_PI + angle;
+        }
+    } else {
+        if (h_target.x >= 0) {
+            camera->angle_h = angle;
+        } else {
+            camera->angle_h = M_PI - angle;
+        }
+    } 
+
+    camera->angle_v = -asin(camera->target.y);
+}
+
 void camera_reset(Camera *camera) {
     vector3f_zero(&camera->position);
     vector3f_z(&camera->target, 1);
     vector3f_y(&camera->up, 1);
+    _camera_set_angle(camera);
     camera_transform_rebuild(camera);
 }
 
@@ -47,7 +71,7 @@ void camera_move_right(Camera *camera, double delta_time) {
 void camera_look(Camera *camera, float dx, float dy) {
     camera->angle_h += dx;
     camera->angle_v += dy;
-    float max_vertical = 0.25 * M_PI;
+    float max_vertical = M_PI/2.0f;
 
     if (camera->angle_v > max_vertical) {
         camera->angle_v = max_vertical;
