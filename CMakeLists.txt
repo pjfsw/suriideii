@@ -23,10 +23,12 @@ add_executable(suriideii
     src/mesh.c
     src/transform.c
     src/camera.c
+    src/texture.c
 )
 
 configure_file(resources/shader.vs ./shader.vs COPYONLY)
 configure_file(resources/shader.fs ./shader.fs COPYONLY)
+configure_file(resources/texture.jpg ./texture.jpg COPYONLY)
 
 target_link_libraries(suriideii ${SDL2_LIBRARIES} ${SDL2IMAGE_LIBRARIES} ${GLEW_LIBRARIES} ${OPENGL_LIBRARIES} m )
 

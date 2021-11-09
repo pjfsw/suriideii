@@ -2,6 +2,11 @@
 #include "math.h"
 #include "string.h"
 
+void vector2f_set(Vector2f *v, float x, float y) {
+    v->x = x;
+    v->y = y;
+}
+
 void vector3f_set(Vector3f *v, float x, float y, float z) {
     v->x = x;
     v->y = y;

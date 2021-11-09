@@ -4,11 +4,11 @@
 #include <stdlib.h>
 
 
-void _mesh_randomize_vertex_color(Vertex *v) {
+/*void _mesh_randomize_vertex_color(Vertex *v) {
     v->color.x = 0.2 + 0.8 * (float)rand() / (float)RAND_MAX;
     v->color.y = 0.2 + 0.8 * (float)rand() / (float)RAND_MAX;
     v->color.z = 0.2 + 0.8 * (float)rand() / (float)RAND_MAX;
-}
+}*/
 
 Mesh *mesh_cube() {
     Mesh *mesh = calloc(1, sizeof(Mesh));
@@ -16,20 +16,29 @@ Mesh *mesh_cube() {
     mesh->vertices = calloc(mesh->vertex_count, sizeof(Vertex));
 
     Vertex vertices[mesh->vertex_count];
-    for (int i = 0; i < mesh->vertex_count; i++) {
+    /*for (int i = 0; i < mesh->vertex_count; i++) {
         _mesh_randomize_vertex_color(&vertices[i]);
-    }
+    }*/
+
     double size = 1.0;
     // Create coords for a square
     vector3f_set(&vertices[0].position, -size, size, -size);
+    vector2f_set(&vertices[0].texture, 0, 0);
     vector3f_set(&vertices[1].position, size, size, -size);
+    vector2f_set(&vertices[1].texture, 1, 0);
     vector3f_set(&vertices[2].position, size, -size, -size);
+    vector2f_set(&vertices[2].texture, 0, 1);
     vector3f_set(&vertices[3].position, -size, -size, -size);
+    vector2f_set(&vertices[3].texture, 1, 1);
 
     vector3f_set(&vertices[4].position, -size, size, size);
+    vector2f_set(&vertices[4].texture, 0, 1);
     vector3f_set(&vertices[5].position, size, size, size);
+    vector2f_set(&vertices[5].texture, 1, 1);
     vector3f_set(&vertices[6].position, size, -size, size);
+    vector2f_set(&vertices[6].texture, 1, 0);
     vector3f_set(&vertices[7].position, -size, -size, size);
+    vector2f_set(&vertices[7].texture, 0, 0);
 
     memcpy(mesh->vertices, vertices, sizeof(Vertex)*mesh->vertex_count);
 

@@ -4,6 +4,11 @@
 typedef struct {
     float x;
     float y;
+} Vector2f;
+
+typedef struct {
+    float x;
+    float y;
     float z;
 } Vector3f;
 
@@ -18,6 +23,7 @@ typedef struct {
     float w;
 } Quaternion;
 
+void vector2f_set(Vector2f *v, float x, float y);
 
 void vector3f_set(Vector3f *v, float x, float y, float z);
 

@@ -38,7 +38,6 @@ float _camera_get_movement(double delta_time) {
     return 10.0 * delta_time;
 }
 
-
 void camera_move(Camera *camera, bool backward, double delta_time) {
     double move = _camera_get_movement(delta_time);
     if (backward) {

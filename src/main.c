@@ -1,5 +1,6 @@
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -7,6 +8,7 @@
 #include "algebra.h"
 #include "camera.h"
 #include "mesh.h"
+#include "texture.h"
 #include "shader_program.h"
 #include "transform.h"
 
@@ -17,6 +19,7 @@
 
 typedef struct {
     GLint transformation;
+    GLint sampler;
 } ShaderVariables;
 
 typedef struct {
@@ -54,6 +57,7 @@ typedef struct {
     Transform transform;
     Camera camera;
     Movement movement;    
+    Texture *texture;
 } App;
 
 Gui gui;
@@ -63,6 +67,7 @@ void destroy_gui() {
     if (gui.window != NULL) {
         SDL_DestroyWindow(gui.window);
     }
+    IMG_Quit();
     SDL_Quit();
 }
 
@@ -83,6 +88,12 @@ bool create_gui(int *argc, char **argv) {
         fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
         return false;
     }
+    int flags = IMG_INIT_JPG | IMG_INIT_PNG;
+    if (flags != IMG_Init(flags)) {
+        fprintf(stderr, "Failed to initialize IMG: %s\n", IMG_GetError());
+        return false;
+    }
+
     memset(&gui, 0, sizeof(Gui));
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, REQ_MAJOR_VERSION);
@@ -120,7 +131,6 @@ bool create_gui(int *argc, char **argv) {
     SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &r);
     SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &g);
     SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &b);
-
     printf("Color depth R=%d, G=%d, B=%d\n", r, g, b);
 
     glewExperimental = true;
@@ -134,14 +144,16 @@ bool create_gui(int *argc, char **argv) {
     const char *gl_version = (const char*)glGetString(GL_VERSION);
     if (gl_version == NULL) {
         fprintf(stderr, "OpenGL %d.%d+ required\n", REQ_MAJOR_VERSION, REQ_MINOR_VERSION);
-        destroy_gui();
         return false;
     }
     printf("GL Version %s\n", gl_version);
 
+    int texture_units;
+    glGetIntegerv(GL_MAX_TEXTURE_UNITS, &texture_units);
+    printf("Max texture units: %d\n", texture_units);
+
     printf("Loading shaders\n");
     if (!(gui.program = shader_program_build("shader.vs", "shader.fs"))) {
-        destroy_gui();
         return false;
     }
 
@@ -149,8 +161,12 @@ bool create_gui(int *argc, char **argv) {
 
     gui.variables.transformation = glGetUniformLocation(gui.program, "gTransformation");
     if (gui.variables.transformation < 0) {
-        fprintf(stderr, "Failed to get gTransformation variable\n");
-        destroy_gui();
+        fprintf(stderr, "Failed to get gTransformation variable from vertex shader\n");
+        return false;
+    }
+    gui.variables.sampler = glGetUniformLocation(gui.program, "gSampler");
+    if (gui.variables.sampler < 0) {
+        fprintf(stderr, "Failed to get gSampler variable from fragment shader\n");
         return false;
     }
 
@@ -180,8 +196,17 @@ void destroy_vbo() {
     glDeleteBuffers(1, &gui.vbo);
 }
 
-void init_app() {
+void destroy_app() {
+    mesh_destroy(app.mesh);
+    texture_destroy(app.texture);
+}
+
+bool init_app() {
     app.mesh = mesh_cube();
+    app.texture = texture_create("texture.jpg");
+    if (app.texture == NULL) {
+        return false;
+    }
     app.fov = 90;
     float near_z = 1;
     float far_z = 20;
@@ -191,6 +216,7 @@ void init_app() {
     update_window_size();
     camera_reset(&app.camera);
     transform_reset(&app.transform);
+    return true;
 }
 
 void render() {
@@ -202,13 +228,16 @@ void render() {
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gui.ibo);
     glEnableClientState(GL_VERTEX_ARRAY);    
+
+    texture_bind(app.texture, GL_TEXTURE0);
+    glUniform1i(gui.variables.sampler, 0);
     // Position
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, VECTOR3F_NUMBER_OF_COMPONENTS, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
 
-    // Color
+    // Texture
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, VECTOR3F_NUMBER_OF_COMPONENTS, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(Vector3f)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(Vector3f)));
 
     glDrawElements(GL_TRIANGLES, app.mesh->index_count, GL_UNSIGNED_INT, 0);
     glDisableVertexAttribArray(0);    
@@ -317,13 +346,15 @@ bool handle_events() {
 
 
 int main(int argc, char **argv) {
-    if (!create_gui(&argc, argv)) {
+    if (!create_gui(&argc, argv) || !init_app()) {
+        destroy_app();
+        destroy_gui();
         return 1;
     }
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CW);
     glCullFace(GL_BACK);
-    init_app();
+    
     create_vbo(app.mesh);
     SDL_SetRelativeMouseMode(true);
     SDL_GL_SetSwapInterval(1);    
@@ -338,6 +369,6 @@ int main(int argc, char **argv) {
         SDL_GL_SwapWindow(gui.window);
     }
     destroy_vbo();
-    mesh_destroy(app.mesh);
+    destroy_app();
     destroy_gui();
 }
