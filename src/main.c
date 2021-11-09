@@ -43,6 +43,7 @@ typedef struct {
     int last_time;
     double delta_time;
     int frames;
+    int fps;
     int frame_time;
     float rotation;
     float pos_index;
@@ -157,6 +158,41 @@ bool create_gui(int *argc, char **argv) {
     return true;
 }
 
+void create_vbo(Mesh *mesh) {
+
+    GLuint *vbo = &gui.vbo;
+    GLuint *vao = &gui.vao;
+    GLuint *ibo = &gui.ibo;
+
+    glGenVertexArrays(1, vao);
+    glGenBuffers(1, vbo);
+    glBindVertexArray(*vao);
+    glBindBuffer(GL_ARRAY_BUFFER, *vbo);    
+    glBufferData(GL_ARRAY_BUFFER, mesh->vertex_count*sizeof(Vertex), mesh->vertices, GL_STATIC_DRAW);
+
+    glGenBuffers(1, ibo);
+    // TODO vertex array?
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->index_count*sizeof(int), mesh->indices, GL_STATIC_DRAW);
+}
+
+void destroy_vbo() {
+    glDeleteBuffers(1, &gui.vbo);
+}
+
+void init_app() {
+    app.mesh = mesh_cube();
+    app.fov = 90;
+    float near_z = 1;
+    float far_z = 20;
+    float z_range = near_z - far_z;
+    app.perspective_a = (-far_z - near_z) / z_range;
+    app.perspective_b = 2.0f * far_z * near_z / z_range;
+    update_window_size();
+    camera_reset(&app.camera);
+    transform_reset(&app.transform);
+}
+
 void render() {
     Matrix4f transform;    
     matrix4f_multiply_target(&app.camera.m, &app.transform.m, &transform);
@@ -241,7 +277,7 @@ void mouse_motion(int x, int y) {
     camera_look(&app.camera, dx, dy);
 }
 
-void display_func() {
+void update_time() {
     int time = SDL_GetTicks();
     int diff = time-app.last_time;
     app.delta_time = (double)(diff)*0.001;
@@ -249,74 +285,34 @@ void display_func() {
     app.frames++;
     app.frame_time += diff;
     if (app.frames > 100) {
-        printf("Frame rate: %d fps\n", app.frames * 1000 / app.frame_time);
+        app.fps = app.frames * 1000 / app.frame_time;
+        printf("Frame rate: %d fps\n", app.fps);
         app.frame_time = 0;
         app.frames = 0;
     }
-    update_state();
-    glClear(GL_COLOR_BUFFER_BIT);
-    render();
-    SDL_GL_SwapWindow(gui.window);
 }
 
-void create_vbo(Mesh *mesh) {
-
-    GLuint *vbo = &gui.vbo;
-    GLuint *vao = &gui.vao;
-    GLuint *ibo = &gui.ibo;
-
-    glGenVertexArrays(1, vao);
-    glGenBuffers(1, vbo);
-    glBindVertexArray(*vao);
-    glBindBuffer(GL_ARRAY_BUFFER, *vbo);    
-    glBufferData(GL_ARRAY_BUFFER, mesh->vertex_count*sizeof(Vertex), mesh->vertices, GL_STATIC_DRAW);
-
-    glGenBuffers(1, ibo);
-    // TODO vertex array?
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->index_count*sizeof(int), mesh->indices, GL_STATIC_DRAW);
-}
-
-void destroy_vbo() {
-    glDeleteBuffers(1, &gui.vbo);
-}
-
-void init_app() {
-    app.mesh = mesh_cube();
-    app.fov = 90;
-    float near_z = 1;
-    float far_z = 20;
-    float z_range = near_z - far_z;
-    app.perspective_a = (-far_z - near_z) / z_range;
-    app.perspective_b = 2.0f * far_z * near_z / z_range;
-    update_window_size();
-    camera_reset(&app.camera);
-    transform_reset(&app.transform);
-}
-
-void loop() {
-    while (true) {
-        SDL_Event e;
-        bool down;
-        while (SDL_PollEvent(&e)) {
-            switch (e.type) {
-                case SDL_QUIT:
-                    return;
-                case SDL_KEYDOWN:
-                case SDL_KEYUP:
-                    down = e.type == SDL_KEYDOWN;
-                    if (down && e.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
-                        return;
-                    }
-                    handle_camera_keys((char)e.key.keysym.sym, down);
-                    break;
-                case SDL_MOUSEMOTION:
-                    mouse_motion(e.motion.xrel, e.motion.yrel);
-                    break;
-            }
+bool handle_events() {
+    SDL_Event e;
+    bool down;
+    while (SDL_PollEvent(&e)) {
+        switch (e.type) {
+            case SDL_QUIT:
+                return false;
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+                down = e.type == SDL_KEYDOWN;
+                if (down && e.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                    return false;
+                }
+                handle_camera_keys((char)e.key.keysym.sym, down);
+                break;
+            case SDL_MOUSEMOTION:
+                mouse_motion(e.motion.xrel, e.motion.yrel);
+                break;
         }
-        display_func();
     }
+    return true;
 }
 
 
@@ -334,7 +330,13 @@ int main(int argc, char **argv) {
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
     SDL_GL_SwapWindow(gui.window);
-    loop();
+    while (handle_events()) {
+        update_state();
+        update_time();
+        glClear(GL_COLOR_BUFFER_BIT);
+        render();
+        SDL_GL_SwapWindow(gui.window);
+    }
     destroy_vbo();
     mesh_destroy(app.mesh);
     destroy_gui();
