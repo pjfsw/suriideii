@@ -3,34 +3,25 @@
 #include <string.h>
 #include <stdlib.h>
 
-
-/*void _mesh_randomize_vertex_color(Vertex *v) {
-    v->color.x = 0.2 + 0.8 * (float)rand() / (float)RAND_MAX;
-    v->color.y = 0.2 + 0.8 * (float)rand() / (float)RAND_MAX;
-    v->color.z = 0.2 + 0.8 * (float)rand() / (float)RAND_MAX;
-}*/
-
 Mesh *mesh_cube() {
     Mesh *mesh = calloc(1, sizeof(Mesh));
-    mesh->vertex_count = 8;
+    mesh->vertex_count = 24;
     mesh->vertices = calloc(mesh->vertex_count, sizeof(Vertex));
 
     Vertex vertices[mesh->vertex_count];
-    /*for (int i = 0; i < mesh->vertex_count; i++) {
-        _mesh_randomize_vertex_color(&vertices[i]);
-    }*/
 
     double size = 1.0;
-    // Create coords for a square
+    // front
     vector3f_set(&vertices[0].position, -size, size, -size);
     vector2f_set(&vertices[0].texture, 0, 0);
     vector3f_set(&vertices[1].position, size, size, -size);
     vector2f_set(&vertices[1].texture, 1, 0);
     vector3f_set(&vertices[2].position, size, -size, -size);
-    vector2f_set(&vertices[2].texture, 0, 1);
+    vector2f_set(&vertices[2].texture, 1, 1);
     vector3f_set(&vertices[3].position, -size, -size, -size);
-    vector2f_set(&vertices[3].texture, 1, 1);
+    vector2f_set(&vertices[3].texture, 0, 1);
 
+    // back
     vector3f_set(&vertices[4].position, -size, size, size);
     vector2f_set(&vertices[4].texture, 0, 1);
     vector3f_set(&vertices[5].position, size, size, size);
@@ -39,6 +30,46 @@ Mesh *mesh_cube() {
     vector2f_set(&vertices[6].texture, 1, 0);
     vector3f_set(&vertices[7].position, -size, -size, size);
     vector2f_set(&vertices[7].texture, 0, 0);
+
+    // top
+    vector3f_set(&vertices[8].position, -size, size, -size);
+    vector2f_set(&vertices[8].texture, 0, 0);
+    vector3f_set(&vertices[9].position, -size, size, size);
+    vector2f_set(&vertices[9].texture, 1, 0);
+    vector3f_set(&vertices[10].position, size, size, size);
+    vector2f_set(&vertices[10].texture, 1, 1);
+    vector3f_set(&vertices[11].position, size, size, -size);
+    vector2f_set(&vertices[11].texture, 0, 1);
+
+    // bottom
+    vector3f_set(&vertices[12].position, -size, -size, -size);
+    vector2f_set(&vertices[12].texture, 0, 0);
+    vector3f_set(&vertices[13].position, size, -size, -size);
+    vector2f_set(&vertices[13].texture, 1, 0);
+    vector3f_set(&vertices[14].position, size, -size, size);
+    vector2f_set(&vertices[14].texture, 1, 1);
+    vector3f_set(&vertices[15].position, -size, -size, size);
+    vector2f_set(&vertices[15].texture, 0, 1);
+
+    // left
+    vector3f_set(&vertices[16].position, -size, size, size);
+    vector2f_set(&vertices[16].texture, 0, 0);
+    vector3f_set(&vertices[17].position, -size, size, -size);
+    vector2f_set(&vertices[17].texture, 1, 0);
+    vector3f_set(&vertices[18].position, -size, -size, -size);
+    vector2f_set(&vertices[18].texture, 1, 1);
+    vector3f_set(&vertices[19].position, -size, -size, size);
+    vector2f_set(&vertices[19].texture, 0, 1);
+
+    // right
+    vector3f_set(&vertices[20].position, size, size, -size);
+    vector2f_set(&vertices[20].texture, 0, 0);
+    vector3f_set(&vertices[21].position, size, size, size);
+    vector2f_set(&vertices[21].texture, 1, 0);
+    vector3f_set(&vertices[22].position, size, -size, size);
+    vector2f_set(&vertices[22].texture, 1, 1);
+    vector3f_set(&vertices[23].position, size, -size, -size);
+    vector2f_set(&vertices[23].texture, 0, 1);
 
     memcpy(mesh->vertices, vertices, sizeof(Vertex)*mesh->vertex_count);
 
@@ -53,18 +84,19 @@ Mesh *mesh_cube() {
         5,4,6, // back
         4,7,6,
 
-        0,4,5, // top
-        0,5,1,
+        8,9,10, // top
+        8,10,11,
 
-        6,7,3,// bottom
-        2,6,3,
+        12,13,14, // bottom
+        12,14,15,
 
-        1,5,6, // right
-        1,6,2,
+        16,17,18, // left
+        16,18,19,
 
-        4,0,3, // left
-        4,3,7
+        20,21,22, // right
+        20,22,23
     };
+
     memcpy(mesh->indices, indices, sizeof(int)*mesh->index_count);
     return mesh;
 }
