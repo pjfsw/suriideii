@@ -8,6 +8,7 @@
 #include "algebra.h"
 #include "camera.h"
 #include "mesh.h"
+#include "meshloader.h"
 #include "texture.h"
 #include "shader_program.h"
 #include "transform.h"
@@ -202,7 +203,10 @@ void destroy_app() {
 }
 
 bool init_app() {
-    app.mesh = mesh_cube();
+    app.mesh = mesh_loader_load("skull.obj");
+    if (app.mesh == NULL) {
+        app.mesh = mesh_cube();
+    }
     app.texture = texture_create("texture.jpg");
     if (app.texture == NULL) {
         return false;
@@ -256,7 +260,7 @@ void update_state() {
         app.pos_index -= double_pi;
     }
 
-    app.transform.scale = 1.0; // 0.9 + 0.2 * fabs(cos(app.pos_index));
+    app.transform.scale = 0.1; // 0.9 + 0.2 * fabs(cos(app.pos_index));
     app.transform.rotation.x = app.rotation;
     app.transform.rotation.y = app.rotation;
     app.transform.rotation.z = app.rotation;
