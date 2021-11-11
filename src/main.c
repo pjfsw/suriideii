@@ -203,13 +203,13 @@ void destroy_app() {
 }
 
 bool init_app() {
-    //app.mesh = mesh_loader_load("091_W_Aya_100K.obj");
-    app.mesh = mesh_loader_load("skull.obj");
+    app.mesh = mesh_loader_load("091_W_Aya_100K.obj");
+    //app.mesh = mesh_loader_load("skull.obj");
     if (app.mesh == NULL) {
         app.mesh = mesh_cube();
     }
-    //app.texture = texture_create("091_W_Aya_2K_01.jpg");
-    app.texture = texture_create("skull.jpg");    
+    app.texture = texture_create("091_W_Aya_2K_01.jpg");
+    //app.texture = texture_create("skull.jpg");    
     if (app.texture == NULL) {
         return false;
     }
@@ -262,14 +262,14 @@ void update_state() {
         app.pos_index -= double_pi;
     }
 
-    app.transform.scale = 0.1; // 0.9 + 0.2 * fabs(cos(app.pos_index));
+    app.transform.scale = 0.005; // 0.9 + 0.2 * fabs(cos(app.pos_index));
     app.transform.rotation.x = 0;//app.rotation;
     app.transform.rotation.y = app.rotation;
     app.transform.rotation.z = 0;//app.rotation;
 
     app.transform.position.x = 0;//0.5*cos(app.pos_index);
-    app.transform.position.y = -3;//0.5*sin(2*app.pos_index);
-    app.transform.position.z = 1.0;
+    app.transform.position.y = -3.5;//0.5*sin(2*app.pos_index);
+    app.transform.position.z = 4.0;
 
     transform_rebuild(&app.transform);
 
@@ -361,7 +361,7 @@ int main(int argc, char **argv) {
     glFrontFace(GL_CW);
     glCullFace(GL_BACK);
     glEnable(GL_DEPTH_TEST); 
-    
+
     create_vbo(app.mesh);
     SDL_SetRelativeMouseMode(true);
     SDL_GL_SetSwapInterval(1);    
