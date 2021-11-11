@@ -17,8 +17,6 @@
 #define REQ_MAJOR_VERSION 4
 #define REQ_MINOR_VERSION 2
 
-#define VECTOR3F_NUMBER_OF_COMPONENTS 3
-
 typedef struct {
     GLint direction;
     GLint color;
@@ -264,9 +262,9 @@ void init_lights() {
     vector3f_set(&light.color, 1, 1, 1);
     vector3f_set_and_normalize(&light.direction, 1, -0.5, 1);
     light.ambient_intensity = 0.1;
-    light.diffuse_intensity = 0.5;
+    light.diffuse_intensity = 0.1;
     light.specular_power = 10;
-    light.specular_intensity = 0.4;
+    light.specular_intensity = 0.8;
     setup_light(&light, &gui.variables.light);      
 }
 
