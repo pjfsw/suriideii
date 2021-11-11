@@ -14,6 +14,11 @@ typedef struct {
     int texture_overwrites;
     Vector2f *textures;
     bool *vertex_writes;
+    Vector3f *normals;
+    int normal_count;
+    int normal_overwrites;
+    int normal;
+
 } Meshloader;
 
 typedef struct {
@@ -75,6 +80,9 @@ void _mesh_loader_count(Meshloader *meshloader, char *buf) {
     if (sscanf(buf, "vt %f %f %f", &u,&v,&t) > 1) {
         meshloader->texture_count++;
     }
+    if (sscanf(buf, "vn %f %f %f", &x, &y, &z) > 2) {
+        meshloader->normal_count++;
+    }
     int index_count = sscanf(buf, "f %s %s %s %s", s[0], s[1], s[2], s[3]);
     if (index_count == 3) {
         mesh->index_count += 3;
@@ -108,6 +116,12 @@ void _mesh_loader_populate(Meshloader *meshloader, char *buf) {
         t->x = u;
         t->y = v;
     }
+    if (sscanf(buf, "vn %f %f %f", &x, &y, &z) > 2) {
+        Vector3f *n = &meshloader->normals[meshloader->normal++];
+        n->x = x;
+        n->y = y;
+        n->z = z;
+    }
 
     int index_count = sscanf(buf, "f %s %s %s %s", s[0], s[1], s[2], s[3]);
     int index[4];
@@ -118,13 +132,14 @@ void _mesh_loader_populate(Meshloader *meshloader, char *buf) {
             printf("WARNING: Ignoring out of bounds vertex reference %d out of %d\n  Line: '%s'", face_data.v, mesh->vertex_count, buf);
             continue;
         }
+        index[i] = face_data.v;
+        int vertex_index = face_data.v - 1;
+        Vertex *v = &meshloader->mesh->vertices[vertex_index];
+
         if (face_data.t > meshloader->texture_count) {
             printf("WARNING: Ignoring out of bounds texture reference %d out of %d\n  Line: '%s'", face_data.t, meshloader->texture_count, buf);
             continue;
         } else {
-            index[i] = face_data.v;
-            int vertex_index = face_data.v-1;
-            Vertex *v = &meshloader->mesh->vertices[vertex_index];
             Vector2f *t = &meshloader->textures[face_data.t-1];
             if (meshloader->vertex_writes[vertex_index]) {
                 meshloader->texture_overwrites++;
@@ -132,6 +147,18 @@ void _mesh_loader_populate(Meshloader *meshloader, char *buf) {
             meshloader->vertex_writes[vertex_index] = true;
             v->texture.x = t->x;
             v->texture.y = t->y;
+        }
+        if (face_data.n > meshloader->normal_count) {
+            printf(
+                "WARNING: Ignoring out of bounds normal reference %d out "
+                "of %d\n  Line: '%s'",
+                face_data.n, meshloader->normal_count, buf);
+            continue;
+        } else {
+            Vector3f *n = &meshloader->normals[face_data.n-1];
+            v->normal.x = n->x;
+            v->normal.y = n->y;
+            v->normal.z = n->z;
         }
     }
     if (index_count == 3) {
@@ -170,10 +197,12 @@ Mesh *mesh_loader_load(char *file_name) {
     }
     printf("Detected %d vertices and %d indices\n", mesh->vertex_count, mesh->index_count);
     printf("Number of texture coordinates: %d\n", meshloader.texture_count);
+    printf("Number of normals coordinates: %d\n", meshloader.normal_count);
     mesh->vertices = calloc(mesh->vertex_count, sizeof(Vertex));
     mesh->indices = calloc(mesh->index_count, sizeof(int));
     meshloader.textures = calloc(meshloader.texture_count, sizeof(Vector2f));
     meshloader.vertex_writes = calloc(mesh->vertex_count, sizeof(bool));
+    meshloader.normals = calloc(meshloader.normal_count, sizeof(Vector3f));
     fseek(fp, 0L, SEEK_SET);    
     while (!feof(fp)) {
         fgets(buf, bufsize, fp);
@@ -184,6 +213,7 @@ Mesh *mesh_loader_load(char *file_name) {
     }
     fclose(fp);    
     free(meshloader.textures);
+    free(meshloader.normals);
     free(meshloader.vertex_writes);
     printf("Texture overwrites: %d\n", meshloader.texture_overwrites);
     return mesh;

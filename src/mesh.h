@@ -6,6 +6,7 @@
 typedef struct {
     Vector3f position;
     Vector2f texture;
+    Vector3f normal;
 } Vertex;
 
 typedef struct {    

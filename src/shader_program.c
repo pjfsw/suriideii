@@ -7,7 +7,7 @@
 bool _sp_create_shader(GLuint shader_program, int shader_type, char *shader) {
     GLuint shader_obj = glCreateShader(shader_type);
     if (shader_obj == 0) {
-        fprintf(stderr, "Error creating shader type %d\n", shader_type);
+        fprintf(stderr, "Error creating for: %s\n", shader);
         return false;
     }
 
@@ -26,7 +26,7 @@ bool _sp_create_shader(GLuint shader_program, int shader_type, char *shader) {
         int log_size = 1024;
         GLchar info_log[log_size];
         glGetShaderInfoLog(shader_obj, log_size, NULL, info_log);
-        fprintf(stderr, "Error compiling shader type %d: '%s'\n", shader_type, info_log);
+        fprintf(stderr, "Error compiling shader %s: '%s'\n", shader, info_log);
         return false;
     }
     glAttachShader(shader_program, shader_obj);
@@ -105,7 +105,11 @@ GLuint shader_program_build(char *vs_name, char *fs_name) {
     printf("Loaded fragment shader %s\n", fs_name);
 
     GLuint program = _sp_compile_shaders(vertex_shader, fragment_shader);
-    printf("Compiled shaders\n");
+    if (program > 0) {
+        fprintf(stderr, "Compiled shader program\n");
+    } else {
+        fprintf(stderr, "Failed to compile shader program\n");
+    }
     free(vertex_shader);
     free(fragment_shader);
     return program;

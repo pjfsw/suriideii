@@ -21,6 +21,8 @@
 typedef struct {
     GLint transformation;
     GLint sampler;
+    GLint world;
+    GLint diffuse_light;
 } ShaderVariables;
 
 typedef struct {
@@ -170,6 +172,16 @@ bool create_gui(int *argc, char **argv) {
         fprintf(stderr, "Failed to get gSampler variable from fragment shader\n");
         return false;
     }
+    gui.variables.world = glGetUniformLocation(gui.program, "gWorld");
+    if (gui.variables.world < 0) {
+        fprintf(stderr, "Failed to get gWorld variable from vertex shader\n");
+        return false;
+    }
+    gui.variables.diffuse_light = glGetUniformLocation(gui.program, "gDiffuseLight");
+    if (gui.variables.diffuse_light < 0) {
+        fprintf(stderr, "Failed to get gDiffuseLight variable from vertex shader\n");
+        return false;
+    }
 
     printf("Init done\n");
     return true;
@@ -227,6 +239,12 @@ bool init_app() {
 
 void render() {
     Matrix4f transform;    
+
+    Vector3f diffuse;
+    vector3f_set(&diffuse, 1, -1, 1);
+    vector3f_normalize(&diffuse);
+    glUniform3f(gui.variables.diffuse_light, diffuse.x, diffuse.y, diffuse.z);
+    glUniformMatrix4fv(gui.variables.world, 1, GL_TRUE, &app.transform.m.m[0][0]);
     matrix4f_multiply_target(&app.camera.m, &app.transform.m, &transform);
     matrix4f_multiply(&gui.perspective, &transform);
 
@@ -239,11 +257,18 @@ void render() {
     glUniform1i(gui.variables.sampler, 0);
     // Position
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, VECTOR3F_NUMBER_OF_COMPONENTS, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
-
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
+    long size = sizeof(Vector3f);
+    
     // Texture
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(Vector3f)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)size);
+    size += sizeof(Vector2f);
+
+    // Normal
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)size);
+
 
     glDrawElements(GL_TRIANGLES, app.mesh->index_count, GL_UNSIGNED_INT, 0);
     glDisableVertexAttribArray(0);    
