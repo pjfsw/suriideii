@@ -12,6 +12,7 @@
 #include "texture.h"
 #include "shader_program.h"
 #include "transform.h"
+#include "light.h"
 
 #define REQ_MAJOR_VERSION 4
 #define REQ_MINOR_VERSION 2
@@ -19,10 +20,19 @@
 #define VECTOR3F_NUMBER_OF_COMPONENTS 3
 
 typedef struct {
+    GLint direction;
+    GLint color;
+    GLint intensity;
+    bool has_direction;
+} ShaderLight;
+
+
+typedef struct {
     GLint transformation;
     GLint sampler;
     GLint world;
-    GLint diffuse_light;
+    ShaderLight ambient_light;
+    ShaderLight diffuse_light;
 } ShaderVariables;
 
 typedef struct {
@@ -83,6 +93,34 @@ void update_window_size() {
     matrix4f_perspective(&gui.perspective, fov, ar, app.perspective_a, app.perspective_b);
 }
 
+bool init_shader_light(char *prefix, ShaderLight *light, bool has_direction) {
+    char var[100];
+    light->has_direction = has_direction;
+    if (has_direction) {
+        strcpy(var, prefix);
+        strcat(var, ".direction");
+        light->direction = glGetUniformLocation(gui.program, var);
+        if (light->direction < 0) {
+            fprintf(stderr, "Failed to get %s variable from fragment shader\n", var);
+            return false;
+        }
+    }
+    strcpy(var, prefix);
+    strcat(var, ".color");
+    light->color = glGetUniformLocation(gui.program, var);
+    if (light->color < 0) {
+        fprintf(stderr, "Failed to get %s variable from fragment shader\n", var);
+        return false;
+    }
+    strcpy(var,prefix);
+    strcat(var, ".intensity");
+    light->intensity = glGetUniformLocation(gui.program, var);
+    if (light->intensity < 0) {
+        fprintf(stderr, "Failed to get %s variable from fragment shader\n", var);
+        return false;
+    }
+    return true;
+}
 
 bool create_gui(int *argc, char **argv) {
     (void)argc;
@@ -177,14 +215,39 @@ bool create_gui(int *argc, char **argv) {
         fprintf(stderr, "Failed to get gWorld variable from vertex shader\n");
         return false;
     }
-    gui.variables.diffuse_light = glGetUniformLocation(gui.program, "gDiffuseLight");
-    if (gui.variables.diffuse_light < 0) {
-        fprintf(stderr, "Failed to get gDiffuseLight variable from vertex shader\n");
+
+    if (!init_shader_light("gDiffuseLight", &gui.variables.diffuse_light, true)) {
+        return false;
+    }
+    if (!init_shader_light("gAmbientLight", &gui.variables.ambient_light, false)) {
         return false;
     }
 
     printf("Init done\n");
     return true;
+}
+
+void setup_light(Light *light, ShaderLight *sl) {
+    if (sl->has_direction) {
+        glUniform3f(sl->direction, light->direction.x, light->direction.y, light->direction.z);
+    }
+    glUniform3f(sl->color, light->color.x, light->color.y, light->color.z);
+    glUniform1f(sl->intensity, light->intensity);
+}
+
+void init_lights() {
+    Light diffuse;
+    vector3f_set(&diffuse.color, 1, 0.9, 0.7);
+    vector3f_set_and_normalize(&diffuse.direction, 1, -0.5, 1);
+    diffuse.intensity = 0.5;
+    setup_light(&diffuse, &gui.variables.diffuse_light);      
+
+    Light ambient;
+    vector3f_set(&ambient.color, 0.9, 0.9, 1);
+    vector3f_set_and_normalize(&ambient.direction, 1, 1, 1);
+    ambient.intensity = 0.5;
+    setup_light(&ambient, &gui.variables.ambient_light);      
+
 }
 
 void create_vbo(Mesh *mesh) {
@@ -240,10 +303,6 @@ bool init_app() {
 void render() {
     Matrix4f transform;    
 
-    Vector3f diffuse;
-    vector3f_set(&diffuse, 1, -1, 1);
-    vector3f_normalize(&diffuse);
-    glUniform3f(gui.variables.diffuse_light, diffuse.x, diffuse.y, diffuse.z);
     glUniformMatrix4fv(gui.variables.world, 1, GL_TRUE, &app.transform.m.m[0][0]);
     matrix4f_multiply_target(&app.camera.m, &app.transform.m, &transform);
     matrix4f_multiply(&gui.perspective, &transform);
@@ -386,7 +445,7 @@ int main(int argc, char **argv) {
     glFrontFace(GL_CW);
     glCullFace(GL_BACK);
     glEnable(GL_DEPTH_TEST); 
-
+    init_lights();
     create_vbo(app.mesh);
     SDL_SetRelativeMouseMode(true);
     SDL_GL_SetSwapInterval(1);    

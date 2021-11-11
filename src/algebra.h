@@ -27,6 +27,8 @@ void vector2f_set(Vector2f *v, float x, float y);
 
 void vector3f_set(Vector3f *v, float x, float y, float z);
 
+void vector3f_set_and_normalize(Vector3f *v, float x, float y, float z);
+
 void vector3f_zero(Vector3f *v);
 
 void vector3f_x(Vector3f *v, float x);

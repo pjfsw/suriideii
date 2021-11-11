@@ -13,6 +13,12 @@ void vector3f_set(Vector3f *v, float x, float y, float z) {
     v->z = z;
 }
 
+void vector3f_set_and_normalize(Vector3f *v, float x, float y, float z) {
+    vector3f_set(v, x, y, z);
+    vector3f_normalize(v);
+}
+
+
 void vector3f_zero(Vector3f *v) {
     v->x = 0;
     v->y = 0;
