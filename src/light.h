@@ -8,6 +8,8 @@ typedef struct {
     Vector3f color;
     float ambient_intensity;
     float diffuse_intensity;
+    float specular_intensity;
+    float specular_power;
 } Light;
 
 #endif

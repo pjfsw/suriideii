@@ -23,7 +23,9 @@ typedef struct {
     GLint direction;
     GLint color;
     GLint ambient_intensity;
-    GLint diffuse_intensity;    
+    GLint diffuse_intensity; 
+    GLint specular_intensity;
+    GLint specular_power;
 } ShaderLight;
 
 typedef struct {
@@ -31,6 +33,7 @@ typedef struct {
     GLint sampler;
     GLint world;
     ShaderLight light;
+    GLint view;
 } ShaderVariables;
 
 typedef struct {
@@ -119,6 +122,20 @@ bool init_shader_light(char *prefix, ShaderLight *light) {
     strcat(var, ".ambient_intensity");
     light->ambient_intensity = glGetUniformLocation(gui.program, var);
     if (light->ambient_intensity < 0) {
+        fprintf(stderr, "Failed to get %s variable from fragment shader\n", var);
+        return false;
+    }
+    strcpy(var,prefix);
+    strcat(var, ".specular_intensity");
+    light->specular_intensity = glGetUniformLocation(gui.program, var);
+    if (light->specular_intensity < 0) {
+        fprintf(stderr, "Failed to get %s variable from fragment shader\n", var);
+        return false;
+    }
+    strcpy(var,prefix);
+    strcat(var, ".specular_power");
+    light->specular_power = glGetUniformLocation(gui.program, var);
+    if (light->specular_power < 0) {
         fprintf(stderr, "Failed to get %s variable from fragment shader\n", var);
         return false;
     }
@@ -219,6 +236,11 @@ bool create_gui(int *argc, char **argv) {
         fprintf(stderr, "Failed to get gWorld variable from vertex shader\n");
         return false;
     }
+    gui.variables.view = glGetUniformLocation(gui.program, "gView");
+    if (gui.variables.view < 0) {
+        fprintf(stderr, "Failed to get gView variable from vertex shader\n");
+        return false;
+    }
 
     if (!init_shader_light("gLight", &gui.variables.light)) {
         return false;
@@ -233,14 +255,18 @@ void setup_light(Light *light, ShaderLight *sl) {
     glUniform3f(sl->color, light->color.x, light->color.y, light->color.z);
     glUniform1f(sl->ambient_intensity, light->ambient_intensity);
     glUniform1f(sl->diffuse_intensity, light->diffuse_intensity);
+    glUniform1f(sl->specular_intensity, light->specular_intensity);
+    glUniform1f(sl->specular_power, light->specular_power);
 }
 
 void init_lights() {
     Light light;
     vector3f_set(&light.color, 1, 1, 1);
     vector3f_set_and_normalize(&light.direction, 1, -0.5, 1);
-    light.ambient_intensity = 0.5;
+    light.ambient_intensity = 0.1;
     light.diffuse_intensity = 0.5;
+    light.specular_power = 10;
+    light.specular_intensity = 0.4;
     setup_light(&light, &gui.variables.light);      
 }
 
@@ -299,8 +325,8 @@ void render() {
 
     glUniformMatrix4fv(gui.variables.world, 1, GL_TRUE, &app.transform.m.m[0][0]);
     matrix4f_multiply_target(&app.camera.m, &app.transform.m, &transform);
+    glUniformMatrix4fv(gui.variables.view, 1, GL_TRUE, &transform.m[0][0]);
     matrix4f_multiply(&gui.perspective, &transform);
-
     glUniformMatrix4fv(gui.variables.transformation, 1, GL_TRUE, &transform.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gui.ibo);
