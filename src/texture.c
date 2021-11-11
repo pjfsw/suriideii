@@ -9,18 +9,37 @@ Texture *texture_create(char *file_name) {
         return NULL;
     }
     printf("Loaded texture '%s': %dx%d (%d bytes per pixel)\n", file_name, surface->w, surface->h, surface->format->BytesPerPixel);
+    if (surface->format->BytesPerPixel != 3) {
+        fprintf(stderr, "Unsupported byte width: %d\n", surface->format->BytesPerPixel);
+        free(surface);
+        return NULL;
+    }
     Texture *texture = calloc(1, sizeof(Texture));
     texture->width = surface->w;
     texture->height = surface->h;
     glGenTextures(1, &texture->texture);
     texture->target = GL_TEXTURE_2D; // TODO configurable
     glBindTexture(texture->target, texture->texture);
-    glTexImage2D(texture->target, 0, GL_RGB, texture->width, texture->height, 0, GL_RGB, GL_UNSIGNED_BYTE, surface->pixels);    
+    
+    // Flip rows because OpenGL starts at the bottom
+    char *flipped_image = malloc(texture->width * texture->height * surface->format->BytesPerPixel);
+    char *source = (char*)surface->pixels;
+    int bytes_per_row = texture->width * surface->format->BytesPerPixel;
+    for (int i = 0; i < texture->height; i++) {
+        int src_offset = i * bytes_per_row;
+        int dst_offset = (texture->height - i - 1) * bytes_per_row; 
+        if (src_offset != dst_offset) {
+            memcpy(&flipped_image[dst_offset], &source[src_offset], bytes_per_row);
+        }
+    }
+
+    glTexImage2D(texture->target, 0, GL_RGB, texture->width, texture->height, 0, GL_RGB, GL_UNSIGNED_BYTE, flipped_image);    
     glTexParameterf(texture->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameterf(texture->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameterf(texture->target, GL_TEXTURE_WRAP_S, GL_CLAMP);
     glTexParameterf(texture->target, GL_TEXTURE_WRAP_T, GL_CLAMP);
     glBindTexture(texture->target, 0);
+    free(flipped_image);    
     SDL_FreeSurface(surface);
     return texture;
 }
