@@ -22,17 +22,15 @@
 typedef struct {
     GLint direction;
     GLint color;
-    GLint intensity;
-    bool has_direction;
+    GLint ambient_intensity;
+    GLint diffuse_intensity;    
 } ShaderLight;
-
 
 typedef struct {
     GLint transformation;
     GLint sampler;
     GLint world;
-    ShaderLight ambient_light;
-    ShaderLight diffuse_light;
+    ShaderLight light;
 } ShaderVariables;
 
 typedef struct {
@@ -93,17 +91,15 @@ void update_window_size() {
     matrix4f_perspective(&gui.perspective, fov, ar, app.perspective_a, app.perspective_b);
 }
 
-bool init_shader_light(char *prefix, ShaderLight *light, bool has_direction) {
+bool init_shader_light(char *prefix, ShaderLight *light) {
     char var[100];
-    light->has_direction = has_direction;
-    if (has_direction) {
-        strcpy(var, prefix);
-        strcat(var, ".direction");
-        light->direction = glGetUniformLocation(gui.program, var);
-        if (light->direction < 0) {
-            fprintf(stderr, "Failed to get %s variable from fragment shader\n", var);
-            return false;
-        }
+    strcpy(var, prefix);
+    strcat(var, ".direction");
+    light->direction = glGetUniformLocation(gui.program, var);
+    if (light->direction < 0) {
+        fprintf(
+            stderr, "Failed to get %s variable from fragment shader\n", var);
+        return false;
     }
     strcpy(var, prefix);
     strcat(var, ".color");
@@ -113,12 +109,20 @@ bool init_shader_light(char *prefix, ShaderLight *light, bool has_direction) {
         return false;
     }
     strcpy(var,prefix);
-    strcat(var, ".intensity");
-    light->intensity = glGetUniformLocation(gui.program, var);
-    if (light->intensity < 0) {
+    strcat(var, ".diffuse_intensity");
+    light->diffuse_intensity = glGetUniformLocation(gui.program, var);
+    if (light->diffuse_intensity < 0) {
         fprintf(stderr, "Failed to get %s variable from fragment shader\n", var);
         return false;
     }
+    strcpy(var,prefix);
+    strcat(var, ".ambient_intensity");
+    light->ambient_intensity = glGetUniformLocation(gui.program, var);
+    if (light->ambient_intensity < 0) {
+        fprintf(stderr, "Failed to get %s variable from fragment shader\n", var);
+        return false;
+    }
+
     return true;
 }
 
@@ -216,38 +220,28 @@ bool create_gui(int *argc, char **argv) {
         return false;
     }
 
-    if (!init_shader_light("gDiffuseLight", &gui.variables.diffuse_light, true)) {
+    if (!init_shader_light("gLight", &gui.variables.light)) {
         return false;
     }
-    if (!init_shader_light("gAmbientLight", &gui.variables.ambient_light, false)) {
-        return false;
-    }
-
     printf("Init done\n");
     return true;
 }
 
 void setup_light(Light *light, ShaderLight *sl) {
-    if (sl->has_direction) {
-        glUniform3f(sl->direction, light->direction.x, light->direction.y, light->direction.z);
-    }
+    glUniform3f(sl->direction, light->direction.x, light->direction.y,
+        light->direction.z);
     glUniform3f(sl->color, light->color.x, light->color.y, light->color.z);
-    glUniform1f(sl->intensity, light->intensity);
+    glUniform1f(sl->ambient_intensity, light->ambient_intensity);
+    glUniform1f(sl->diffuse_intensity, light->diffuse_intensity);
 }
 
 void init_lights() {
-    Light diffuse;
-    vector3f_set(&diffuse.color, 1, 0.9, 0.7);
-    vector3f_set_and_normalize(&diffuse.direction, 1, -0.5, 1);
-    diffuse.intensity = 0.5;
-    setup_light(&diffuse, &gui.variables.diffuse_light);      
-
-    Light ambient;
-    vector3f_set(&ambient.color, 0.9, 0.9, 1);
-    vector3f_set_and_normalize(&ambient.direction, 1, 1, 1);
-    ambient.intensity = 0.5;
-    setup_light(&ambient, &gui.variables.ambient_light);      
-
+    Light light;
+    vector3f_set(&light.color, 1, 1, 1);
+    vector3f_set_and_normalize(&light.direction, 1, -0.5, 1);
+    light.ambient_intensity = 0.5;
+    light.diffuse_intensity = 0.5;
+    setup_light(&light, &gui.variables.light);      
 }
 
 void create_vbo(Mesh *mesh) {

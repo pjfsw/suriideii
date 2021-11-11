@@ -6,7 +6,8 @@
 typedef struct {
     Vector3f direction;
     Vector3f color;
-    float intensity;
+    float ambient_intensity;
+    float diffuse_intensity;
 } Light;
 
 #endif
