@@ -31,7 +31,7 @@ typedef struct {
     GLint perspective;
     GLint world;
     GLint sampler;
-    GLint lookAt;
+    GLint camera_pos;
     ShaderLight light;
 } ShaderVariables;
 
@@ -233,7 +233,7 @@ bool create_gui(int *argc, char **argv) {
         !assign_uniform(&gui.variables.perspective, "gPerspective") ||
         !assign_uniform(&gui.variables.world, "gWorld") ||
         !assign_uniform(&gui.variables.sampler, "gSampler") ||
-        !assign_uniform(&gui.variables.lookAt, "gLookAt")) {
+        !assign_uniform(&gui.variables.camera_pos, "gCameraPos")) {
         return false;
     }
 
@@ -318,7 +318,7 @@ bool init_app() {
 void render() {
     glUniformMatrix4fv(gui.variables.world, 1, GL_TRUE, &app.transform.m.m[0][0]);
     glUniformMatrix4fv(gui.variables.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
-    glUniform3f(gui.variables.lookAt, app.camera.target.x, app.camera.target.y, app.camera.target.z);
+    glUniform3f(gui.variables.camera_pos, app.camera.position.x, app.camera.position.y, app.camera.position.z);
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gui.ibo);
     glEnableClientState(GL_VERTEX_ARRAY);    
@@ -359,7 +359,7 @@ void update_state() {
 
     app.transform.scale = 0.08; // 0.9 + 0.2 * fabs(cos(app.pos_index));
     app.transform.rotation.x = -M_PI/2;//app.rotation;
-    app.transform.rotation.y = 0;//app.rotation;
+    app.transform.rotation.y = app.rotation;
     app.transform.rotation.z = 0;//app.rotation;
 
     app.transform.position.x = 0;//0.5*cos(app.pos_index);
