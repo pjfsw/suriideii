@@ -27,11 +27,11 @@ typedef struct {
 } ShaderLight;
 
 typedef struct {
-    GLint transformation;
-    GLint sampler;
+    GLint camera;
+    GLint perspective;
     GLint world;
+    GLint sampler;
     ShaderLight light;
-    GLint view;
 } ShaderVariables;
 
 typedef struct {
@@ -141,6 +141,15 @@ bool init_shader_light(char *prefix, ShaderLight *light) {
     return true;
 }
 
+bool assign_uniform(GLint *uniform, char *name) {
+    *uniform = glGetUniformLocation(gui.program, name);
+    if (*uniform < 0) {
+        fprintf(stderr, "Failed to get %s variable from shader program\n", name);
+        return false;
+    }
+    return true;
+}
+
 bool create_gui(int *argc, char **argv) {
     (void)argc;
     (void)argv;
@@ -219,24 +228,10 @@ bool create_gui(int *argc, char **argv) {
 
     printf("Loading location\n");
 
-    gui.variables.transformation = glGetUniformLocation(gui.program, "gTransformation");
-    if (gui.variables.transformation < 0) {
-        fprintf(stderr, "Failed to get gTransformation variable from vertex shader\n");
-        return false;
-    }
-    gui.variables.sampler = glGetUniformLocation(gui.program, "gSampler");
-    if (gui.variables.sampler < 0) {
-        fprintf(stderr, "Failed to get gSampler variable from fragment shader\n");
-        return false;
-    }
-    gui.variables.world = glGetUniformLocation(gui.program, "gWorld");
-    if (gui.variables.world < 0) {
-        fprintf(stderr, "Failed to get gWorld variable from vertex shader\n");
-        return false;
-    }
-    gui.variables.view = glGetUniformLocation(gui.program, "gView");
-    if (gui.variables.view < 0) {
-        fprintf(stderr, "Failed to get gView variable from vertex shader\n");
+    if (!assign_uniform(&gui.variables.camera, "gCamera") ||
+        !assign_uniform(&gui.variables.perspective, "gPerspective") ||
+        !assign_uniform(&gui.variables.world, "gWorld") ||
+        !assign_uniform(&gui.variables.sampler, "gSampler")) {
         return false;
     }
 
@@ -261,10 +256,10 @@ void init_lights() {
     Light light;
     vector3f_set(&light.color, 1, 1, 1);
     vector3f_set_and_normalize(&light.direction, 1, -0.5, 1);
-    light.ambient_intensity = 0.1;
-    light.diffuse_intensity = 0.1;
-    light.specular_power = 10;
+    light.ambient_intensity = 0.2;
+    light.diffuse_intensity = 0.8;
     light.specular_intensity = 0.8;
+    light.specular_power = 10;
     setup_light(&light, &gui.variables.light);      
 }
 
@@ -319,13 +314,13 @@ bool init_app() {
 }
 
 void render() {
-    Matrix4f transform;    
+    //Matrix4f transform;    
 
     glUniformMatrix4fv(gui.variables.world, 1, GL_TRUE, &app.transform.m.m[0][0]);
-    matrix4f_multiply_target(&app.camera.m, &app.transform.m, &transform);
-    glUniformMatrix4fv(gui.variables.view, 1, GL_TRUE, &transform.m[0][0]);
-    matrix4f_multiply(&gui.perspective, &transform);
-    glUniformMatrix4fv(gui.variables.transformation, 1, GL_TRUE, &transform.m[0][0]);
+    //matrix4f_multiply_target(&app.camera.m, &app.transform.m, &transform);
+    glUniformMatrix4fv(gui.variables.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
+    //matrix4f_multiply(&gui.perspective, &transform);
+    glUniformMatrix4fv(gui.variables.perspective, 1, GL_TRUE, &gui.perspective.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gui.ibo);
     glEnableClientState(GL_VERTEX_ARRAY);    
