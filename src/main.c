@@ -31,6 +31,7 @@ typedef struct {
     GLint perspective;
     GLint world;
     GLint sampler;
+    GLint lookAt;
     ShaderLight light;
 } ShaderVariables;
 
@@ -231,7 +232,8 @@ bool create_gui(int *argc, char **argv) {
     if (!assign_uniform(&gui.variables.camera, "gCamera") ||
         !assign_uniform(&gui.variables.perspective, "gPerspective") ||
         !assign_uniform(&gui.variables.world, "gWorld") ||
-        !assign_uniform(&gui.variables.sampler, "gSampler")) {
+        !assign_uniform(&gui.variables.sampler, "gSampler") ||
+        !assign_uniform(&gui.variables.lookAt, "gLookAt")) {
         return false;
     }
 
@@ -256,10 +258,10 @@ void init_lights() {
     Light light;
     vector3f_set(&light.color, 1, 1, 1);
     vector3f_set_and_normalize(&light.direction, 1, -0.5, 1);
-    light.ambient_intensity = 0.2;
-    light.diffuse_intensity = 0.8;
-    light.specular_intensity = 0.8;
-    light.specular_power = 10;
+    light.ambient_intensity = 0.1;
+    light.diffuse_intensity = 0.5;
+    light.specular_intensity = 0.4;
+    light.specular_power = 32;
     setup_light(&light, &gui.variables.light);      
 }
 
@@ -291,13 +293,13 @@ void destroy_app() {
 }
 
 bool init_app() {
-    app.mesh = mesh_loader_load("091_W_Aya_100K.obj");
-    //app.mesh = mesh_loader_load("skull.obj");
+    //app.mesh = mesh_loader_load("091_W_Aya_100K.obj");
+    app.mesh = mesh_loader_load("skull.obj");
     if (app.mesh == NULL) {
         app.mesh = mesh_cube();
     }
-    app.texture = texture_create("091_W_Aya_2K_01.jpg");
-    //app.texture = texture_create("skull.jpg");    
+    //app.texture = texture_create("091_W_Aya_2K_01.jpg");
+    app.texture = texture_create("skull.jpg");    
     if (app.texture == NULL) {
         return false;
     }
@@ -321,6 +323,7 @@ void render() {
     glUniformMatrix4fv(gui.variables.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
     //matrix4f_multiply(&gui.perspective, &transform);
     glUniformMatrix4fv(gui.variables.perspective, 1, GL_TRUE, &gui.perspective.m[0][0]);
+    glUniform3f(gui.variables.lookAt, app.camera.target.x, app.camera.target.y, app.camera.target.z);
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gui.ibo);
     glEnableClientState(GL_VERTEX_ARRAY);    
@@ -359,13 +362,13 @@ void update_state() {
         app.pos_index -= double_pi;
     }
 
-    app.transform.scale = 0.005; // 0.9 + 0.2 * fabs(cos(app.pos_index));
-    app.transform.rotation.x = 0;//app.rotation;
+    app.transform.scale = 0.08; // 0.9 + 0.2 * fabs(cos(app.pos_index));
+    app.transform.rotation.x = -M_PI/2;//app.rotation;
     app.transform.rotation.y = app.rotation;
     app.transform.rotation.z = 0;//app.rotation;
 
     app.transform.position.x = 0;//0.5*cos(app.pos_index);
-    app.transform.position.y = -3.5;//0.5*sin(2*app.pos_index);
+    app.transform.position.y = -0.5;//0.5*sin(2*app.pos_index);
     app.transform.position.z = 4.0;
 
     transform_rebuild(&app.transform);
