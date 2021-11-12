@@ -259,9 +259,9 @@ void init_lights() {
     vector3f_set(&light.color, 1, 1, 1);
     vector3f_set_and_normalize(&light.direction, 1, -0.5, 1);
     light.ambient_intensity = 0.1;
-    light.diffuse_intensity = 0.5;
-    light.specular_intensity = 0.4;
-    light.specular_power = 32;
+    light.diffuse_intensity = 0.6;
+    light.specular_intensity = 0.3;
+    light.specular_power = 8;
     setup_light(&light, &gui.variables.light);      
 }
 
@@ -316,13 +316,8 @@ bool init_app() {
 }
 
 void render() {
-    //Matrix4f transform;    
-
     glUniformMatrix4fv(gui.variables.world, 1, GL_TRUE, &app.transform.m.m[0][0]);
-    //matrix4f_multiply_target(&app.camera.m, &app.transform.m, &transform);
     glUniformMatrix4fv(gui.variables.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
-    //matrix4f_multiply(&gui.perspective, &transform);
-    glUniformMatrix4fv(gui.variables.perspective, 1, GL_TRUE, &gui.perspective.m[0][0]);
     glUniform3f(gui.variables.lookAt, app.camera.target.x, app.camera.target.y, app.camera.target.z);
     glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gui.ibo);
@@ -465,6 +460,7 @@ int main(int argc, char **argv) {
     create_vbo(app.mesh);
     SDL_SetRelativeMouseMode(true);
     SDL_GL_SetSwapInterval(1);    
+    glUniformMatrix4fv(gui.variables.perspective, 1, GL_TRUE, &gui.perspective.m[0][0]);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     SDL_GL_SwapWindow(gui.window);

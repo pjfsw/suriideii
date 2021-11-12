@@ -23,8 +23,7 @@ struct Light {
 uniform Light gLight;
 
 void main() {
-    vec4 view_position = gCamera * gWorld * vec4(position, 1.0);
-    gl_Position = gPerspective * view_position;
+    gl_Position = gPerspective* gCamera * gWorld * vec4(position, 1.0);
     vec3 normal_0 = normalize((gWorld * vec4(normal,0.0)).xyz);
 
     // Diffuse lighting component
