@@ -8,7 +8,9 @@
 typedef struct {
     Vector3f position;
     Vector3f target;
+    Vector3f flat_target;
     Vector3f up;
+    Vector3f flat_up;
     Matrix4f m;
     float angle_h;
     float angle_v;

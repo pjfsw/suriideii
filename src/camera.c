@@ -29,7 +29,9 @@ void _camera_set_angle(Camera *camera) {
 void camera_reset(Camera *camera) {
     vector3f_zero(&camera->position);
     vector3f_z(&camera->target, 1);
+    vector3f_z(&camera->flat_target, 1);
     vector3f_y(&camera->up, 1);
+    vector3f_y(&camera->flat_up, 1);
     _camera_set_angle(camera);
     camera_transform_rebuild(camera);
 }
@@ -44,14 +46,14 @@ void camera_move(Camera *camera, bool backward, double delta_time) {
         move = -1.0 * move;
     }
     Vector3f temp;
-    vector3f_add(vector3f_multiply_scalar(move, &camera->target, &temp),
+    vector3f_add(vector3f_multiply_scalar(move, &camera->flat_target, &temp),
         &camera->position);
 }
 
 void camera_move_left(Camera *camera, double delta_time) {
     double move = _camera_get_movement(delta_time);
     Vector3f left;
-    vector3f_cross(&camera->target, &camera->up, &left);
+    vector3f_cross(&camera->flat_target, &camera->flat_up, &left);
     vector3f_normalize(&left);
     vector3f_multiply_scalar(move, &left, &left); 
     vector3f_add(&left, &camera->position);
@@ -60,7 +62,7 @@ void camera_move_left(Camera *camera, double delta_time) {
 void camera_move_right(Camera *camera, double delta_time) {
     double move = _camera_get_movement(delta_time);
     Vector3f right;
-    vector3f_cross(&camera->up, &camera->target, &right);
+    vector3f_cross(&camera->flat_up, &camera->target, &right);
     vector3f_normalize(&right);
     vector3f_multiply_scalar(move, &right, &right); 
     vector3f_add(&right, &camera->position);
@@ -94,6 +96,8 @@ void camera_look(Camera *camera, float dx, float dy) {
     vector3f_rotate(&view, camera->angle_v, &u);
 
     vector3f_copy(&view, &camera->target);
+    vector3f_copy(&view, &camera->flat_target);
+    vector3f_set_and_normalize(&camera->flat_target, camera->flat_target.x, 0, camera->flat_target.z);
     vector3f_cross(&camera->target, &u, &camera->up);
     vector3f_normalize(&camera->up);
 }

@@ -258,10 +258,10 @@ void init_lights() {
     Light light;
     vector3f_set(&light.color, 1, 1, 1);
     vector3f_set_and_normalize(&light.direction, 1, -0.5, 1);
-    light.ambient_intensity = 0.1;
-    light.diffuse_intensity = 0.6;
+    light.ambient_intensity = 0.4;
+    light.diffuse_intensity = 0.4;
     light.specular_intensity = 0.3;
-    light.specular_power = 8;
+    light.specular_power = 32;
     setup_light(&light, &gui.variables.light);      
 }
 
@@ -359,7 +359,7 @@ void update_state() {
 
     app.transform.scale = 0.08; // 0.9 + 0.2 * fabs(cos(app.pos_index));
     app.transform.rotation.x = -M_PI/2;//app.rotation;
-    app.transform.rotation.y = app.rotation;
+    app.transform.rotation.y = 0;//app.rotation;
     app.transform.rotation.z = 0;//app.rotation;
 
     app.transform.position.x = 0;//0.5*cos(app.pos_index);
