@@ -26,6 +26,17 @@ void _camera_set_angle(Camera *camera) {
     camera->angle_v = -asin(camera->target.y);
 }
 
+void camera_set(Camera *camera, Vector3f *position, Vector3f *target, Vector3f *up) {
+    vector3f_copy(position, &camera->position);
+    vector3f_copy(target, &camera->target);
+    vector3f_copy(target, &camera->flat_target);
+    camera->flat_target.y = 0;
+    vector3f_copy(up, &camera->up);
+    vector3f_y(&camera->flat_up, 1);
+    _camera_set_angle(camera);
+    camera_transform_rebuild(camera);
+}
+
 void camera_reset(Camera *camera) {
     vector3f_zero(&camera->position);
     vector3f_z(&camera->target, 1);

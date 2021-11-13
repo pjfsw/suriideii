@@ -18,6 +18,8 @@ typedef struct {
 
 void camera_reset(Camera *camera);
 
+void camera_set(Camera *camera, Vector3f *position, Vector3f *target, Vector3f *up);
+
 void camera_move(Camera *camera, bool backward, double delta_time);
 
 void camera_move_left(Camera *camera, double delta_time);

@@ -73,6 +73,7 @@ typedef struct {
     float perspective_a;
     float perspective_b;
     Camera camera;
+    Camera light_camera;
     Movement movement;    
     float mesh_y;
     Mesh **meshes;
@@ -82,7 +83,7 @@ typedef struct {
     Texture **textures;
     int texture_count;
     Shadowmap *shadowmap;
-    Matrix4f light_matrix;
+    //Matrix4f light_matrix;
 } App;
 
 Gui gui;
@@ -277,17 +278,17 @@ void setup_light(Light *light, ShaderLight *sl) {
 void init_lights() {
     Light light;
     vector3f_set(&light.color, 1, 1, 1);
-    vector3f_set_and_normalize(&light.direction, 0, 0, 1);
-    matrix4f_rotation(&app.light_matrix, 0,M_PI/4,0); 
-    //vector3f_set_and_normalize(&light.direction, 1, -0.5, 1);
-    matrix4f_multiply_vector(&app.light_matrix, &light.direction);
-    vector3f_normalize(&light.direction);
-    light.ambient_intensity = 0.4;
-    light.diffuse_intensity = 0.4;
+    //vector3f_set_and_normalize(&light.direction, 1, -0.5, 1);    
+    camera_reset(&app.light_camera);
+    camera_look(&app.light_camera, M_PI/4, M_PI/3);
+    camera_transform_rebuild(&app.light_camera);
+    vector3f_copy(&app.light_camera.target, &light.direction);
+    light.ambient_intensity = 0.2;
+    light.diffuse_intensity = 0.6;
     light.specular_intensity = 0.3;
     light.specular_power = 32;
     setup_light(&light, &gui.variables.light);    
-    glUniformMatrix4fv(gui.shadowmap_variables.light_matrix, 1, GL_TRUE, &app.light_matrix.m[0][0]);
+    glUniformMatrix4fv(gui.shadowmap_variables.light_matrix, 1, GL_TRUE, &app.light_camera.m.m[0][0]);
 
 }
 
@@ -397,7 +398,7 @@ void render_object(Object *object) {
     MeshGL *gl = &object->mesh->gl;
 
     glUniformMatrix4fv(
-        gui.variables.light_depth, 1, GL_TRUE, &app.light_matrix.m[0][0]);
+        gui.variables.light_depth, 1, GL_TRUE, &app.light_camera.m.m[0][0]);
 
     glUniformMatrix4fv(gui.variables.world, 1, GL_TRUE, &object->transform.m.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gl->vbo);

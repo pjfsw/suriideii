@@ -28,8 +28,8 @@ void main() {
     vec4 world_position = gWorld * vec4(position, 1.0);
     gl_Position = gPerspective * gCamera * world_position;
     vec3 normal_0 = normalize((gWorld * vec4(normal,0.0)).xyz);
-    shadow_coord_0 = gLightDepth * vec4(world_position);
-
+    shadow_coord_0 = gPerspective * gLightDepth * vec4(world_position);
+    
     // Diffuse lighting component
     float diffuse_factor = dot(normalize(normal_0), -gLight.direction); 
     float diffuse_intensity = diffuse_factor * gLight.diffuse_intensity;
