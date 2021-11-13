@@ -151,9 +151,7 @@ bool assign_uniform(GLint *uniform, char *name) {
     return true;
 }
 
-bool create_gui(int *argc, char **argv) {
-    (void)argc;
-    (void)argv;
+bool create_gui() {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0) {
         fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
         return false;
@@ -294,13 +292,13 @@ void destroy_app() {
 
 bool init_app() {
     //app.mesh = mesh_loader_load("091_W_Aya_100K.obj");
-    //app.mesh = mesh_loader_load("skull.obj");
+    app.mesh = mesh_loader_load("skull.obj");
     if (app.mesh == NULL) {
         app.mesh = mesh_cube();
     }
     //app.texture = texture_create("091_W_Aya_2K_01.jpg");
-    //app.texture = texture_create("skull.jpg");    
-    app.texture = texture_create("texture.jpg");
+    app.texture = texture_create("skull.jpg");    
+    //app.texture = texture_create("texture.jpg");
     if (app.texture == NULL) {
         return false;
     }
@@ -357,14 +355,14 @@ void update_state() {
         app.pos_index -= double_pi;
     }
 
-    app.transform.scale = 1; // 0.9 + 0.2 * fabs(cos(app.pos_index));
+    app.transform.scale = 0.08; // 0.9 + 0.2 * fabs(cos(app.pos_index));
     app.transform.rotation.x = -M_PI/2;//app.rotation;
     app.transform.rotation.y = app.rotation;
     app.transform.rotation.z = 0;//app.rotation;
 
     app.transform.position.x = 0;//0.5*cos(app.pos_index);
     app.transform.position.y = -0.5;//0.5*sin(2*app.pos_index);
-    app.transform.position.z = 0.0;
+    app.transform.position.z = 4.0;
 
     transform_rebuild(&app.transform);
 
@@ -447,16 +445,17 @@ bool handle_events() {
 
 
 int main(int argc, char **argv) {
-    if (!init_app() || !create_gui(&argc, argv)) {
+    (void)argc; (void)argv;
+    if (!create_gui() || !init_app()) {
         destroy_app();
         destroy_gui();
         return 1;
     }
     update_window_size();
-    //glEnable(GL_CULL_FACE);
-    //glFrontFace(GL_CW);
-    //glCullFace(GL_BACK);
-    glDisable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CW);
+    glCullFace(GL_BACK);
+    //glDisable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST); 
     init_lights();
     create_vbo(app.mesh);
