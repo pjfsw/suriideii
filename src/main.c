@@ -447,7 +447,7 @@ bool handle_events() {
 
 
 int main(int argc, char **argv) {
-    if (!create_gui(&argc, argv) || !init_app()) {
+    if (!init_app() || !create_gui(&argc, argv)) {
         destroy_app();
         destroy_gui();
         return 1;
