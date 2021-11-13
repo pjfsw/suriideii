@@ -297,37 +297,53 @@ void destroy_app() {
 }
 
 bool init_app() {
-    app.texture_count = 1;
+    app.texture_count = 2;
     app.textures = calloc(app.texture_count, sizeof(Texture*));
-    app.textures[0] = texture_create("skull.jpg");
+    app.textures[0] = texture_create("texture.jpg");
     if (app.textures[0] == NULL) {
         return false;
     }
-    app.mesh_count = 1;
+    app.textures[1] = texture_create("skull.jpg");
+    if (app.textures[1] == NULL) {
+        return false;
+    }
+    app.mesh_count = 2;
     app.meshes = calloc(app.mesh_count, sizeof(Mesh*));
-    app.meshes[0] = mesh_loader_load("skull.obj");
-    if (app.meshes[0] == NULL) {
-        app.meshes[0] = mesh_cube();
+    app.meshes[0] = mesh_cube();
+    app.meshes[1] = mesh_loader_load("skull.obj");
+    if (app.meshes[1] == NULL) {
+        app.meshes[1] = mesh_cube();
     }
 
     app.object_count = 3;
     app.objects = calloc(app.object_count, sizeof(Object*));
-    for (int i = 0; i < app.object_count; i++) {
-        app.objects[i] = object_create(app.meshes[0], app.textures[0]);
+    app.objects[0] = object_create(app.meshes[0], app.textures[0]);
+    for (int i = 1; i < app.object_count; i++) {
+        app.objects[i] = object_create(app.meshes[1], app.textures[1]);
     }
+    for (int i = 0; i < app.object_count; i++) {
+        transform_reset(&app.objects[i]->transform);
+        if (i == 0) {
+            app.objects[i]->transform.scale = 7;
+            app.objects[i]->transform.position.z = 4;
+            app.objects[i]->transform.position.y = -8;
+            app.objects[i]->transform.position.x = 0;
+            transform_rebuild(&app.objects[i]->transform);
+        } else {
+            app.objects[i]->transform.rotation.y = (float)i * M_PI / 2;
+            app.objects[i]->transform.position.z = i * 2 + 3;
+            app.objects[i]->transform.scale = 0.2;  
+        }
+    }
+
     app.fov = 90;
     float near_z = 1;
-    float far_z = 20;
+    float far_z = 30;
     float z_range = near_z - far_z;
     app.perspective_a = (-far_z - near_z) / z_range;
     app.perspective_b = 2.0f * far_z * near_z / z_range;
     camera_reset(&app.camera);
-    for (int i = 0; i < app.object_count; i++) {
-        transform_reset(&app.objects[i]->transform);
-        app.objects[i]->transform.rotation.y = (float)i*M_PI/2;
-        app.objects[i]->transform.position.z = i*2+3;
 
-    }
     return true;
 }
 
@@ -375,7 +391,6 @@ void update_object_state(Object *object) {
         object->transform.rotation.y -= double_pi;
     }
 
-    object->transform.scale = 0.2; // 0.9 + 0.2 * fabs(cos(app.pos_index));
     object->transform.rotation.x = -M_PI/2;//app.rotation;
     //app.transform.rotation.y = app.rotation;
     object->transform.rotation.z = 0;
@@ -386,10 +401,10 @@ void update_object_state(Object *object) {
 }
 
 void update_state() {
-    for (int i = 0; i < app.object_count; i++) {
+    for (int i = 1; i < app.object_count; i++) {
         Object *object = app.objects[i];
         if (object != NULL) {
-            object->transform.position.x = (i-1)*6;
+            object->transform.position.x = -3+(i-1)*6;
             update_object_state(object);
         }
     }
