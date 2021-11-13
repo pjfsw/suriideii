@@ -20,6 +20,9 @@ Mesh *mesh_cube() {
     vector2f_set(&vertices[2].texture, 1, 1);
     vector3f_set(&vertices[3].position, -size, -size, -size);
     vector2f_set(&vertices[3].texture, 0, 1);
+    for (int i = 0; i < 3; i++) {
+        vector3f_set(&vertices[i].normal, 0,0,-1);
+    }
 
     // back
     vector3f_set(&vertices[4].position, -size, size, size);
@@ -30,6 +33,10 @@ Mesh *mesh_cube() {
     vector2f_set(&vertices[6].texture, 1, 0);
     vector3f_set(&vertices[7].position, -size, -size, size);
     vector2f_set(&vertices[7].texture, 0, 0);
+    for (int i = 0; i < 3; i++) {
+        vector3f_set(&vertices[i+4].normal, 0,0,1);
+    }
+
 
     // top
     vector3f_set(&vertices[8].position, -size, size, -size);
@@ -41,6 +48,10 @@ Mesh *mesh_cube() {
     vector3f_set(&vertices[11].position, size, size, -size);
     vector2f_set(&vertices[11].texture, 0, 1);
 
+    for (int i = 0; i < 3; i++) {
+        vector3f_set(&vertices[i+8].normal, 0,1,0);
+    }
+
     // bottom
     vector3f_set(&vertices[12].position, -size, -size, -size);
     vector2f_set(&vertices[12].texture, 0, 0);
@@ -50,6 +61,11 @@ Mesh *mesh_cube() {
     vector2f_set(&vertices[14].texture, 1, 1);
     vector3f_set(&vertices[15].position, -size, -size, size);
     vector2f_set(&vertices[15].texture, 0, 1);
+
+    for (int i = 0; i < 3; i++) {
+        vector3f_set(&vertices[i+12].normal, 0,-1,0);
+    }
+
 
     // left
     vector3f_set(&vertices[16].position, -size, size, size);
@@ -61,6 +77,10 @@ Mesh *mesh_cube() {
     vector3f_set(&vertices[19].position, -size, -size, size);
     vector2f_set(&vertices[19].texture, 0, 1);
 
+    for (int i = 0; i < 3; i++) {
+        vector3f_set(&vertices[i+16].normal, -1, 0,0);
+    }
+
     // right
     vector3f_set(&vertices[20].position, size, size, -size);
     vector2f_set(&vertices[20].texture, 0, 0);
@@ -70,6 +90,10 @@ Mesh *mesh_cube() {
     vector2f_set(&vertices[22].texture, 1, 1);
     vector3f_set(&vertices[23].position, size, -size, -size);
     vector2f_set(&vertices[23].texture, 0, 1);
+
+    for (int i = 0; i < 3; i++) {
+        vector3f_set(&vertices[i+20].normal, 1, 0,0);
+    }
 
     memcpy(mesh->vertices, vertices, sizeof(Vertex)*mesh->vertex_count);
 
