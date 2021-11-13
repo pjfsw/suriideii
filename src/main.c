@@ -280,7 +280,7 @@ void init_lights() {
     vector3f_set(&light.color, 1, 1, 1);
     //vector3f_set_and_normalize(&light.direction, 1, -0.5, 1);    
     camera_reset(&app.light_camera);
-    camera_look(&app.light_camera, M_PI/4, M_PI/3);
+    camera_look(&app.light_camera, M_PI/4, M_PI/4);
     camera_transform_rebuild(&app.light_camera);
     vector3f_copy(&app.light_camera.target, &light.direction);
     light.ambient_intensity = 0.2;
