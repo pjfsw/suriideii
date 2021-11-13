@@ -1,10 +1,27 @@
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "algebra.h"
-#include "math.h"
-#include "string.h"
 
 void vector2f_set(Vector2f *v, float x, float y) {
     v->x = x;
     v->y = y;
+}
+
+void vector2f_copy(Vector2f *src, Vector2f *target) {
+    target->x = src->x;
+    target->y = src->y;
+}
+
+char *vector2f_to_string(Vector2f *v, char *output) {
+    sprintf(output, "(%f,%f)", v->x, v->y);
+    return output;
+}
+
+char *vector3f_to_string(Vector3f *v, char *output) {
+    sprintf(output, "(%f,%f,%f)", v->x, v->y, v->z);
+    return output;
 }
 
 void vector3f_set(Vector3f *v, float x, float y, float z) {
@@ -97,6 +114,21 @@ Vector3f *vector3f_multiply_scalar(float scalar, Vector3f *src, Vector3f *target
     return target;
 }
 
+bool _algebra_float_equals(float a, float b) {
+    float diff = a-b;
+    return fabs(diff) < 0.0001;
+}
+
+bool vector2f_equals(Vector2f *v1,  Vector2f *v2) {
+    return _algebra_float_equals(v1->x, v2->x) &&
+           _algebra_float_equals(v1->y, v2->y);
+}
+
+bool vector3f_equals(Vector3f *v1,  Vector3f *v2) {
+    return _algebra_float_equals(v1->x, v2->x) &&
+           _algebra_float_equals(v1->y, v2->y) &&
+           _algebra_float_equals(v1->z, v2->z);
+}
 
 void matrix4f_set(Matrix4f *m, float m11, float m12, float m13, float m14,
     float m21, float m22, float m23, float m24, float m31, float m32, float m33,
