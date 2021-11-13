@@ -207,6 +207,16 @@ void matrix4f_perspective(Matrix4f *m, float fov, float ar, float a, float b) {
     matrix4f_set(m, 1/(tan_half_fov), 0, 0, 0, 0, 1/(tan_half_fov * ar), 0, 0, 0,0,a,b,0,0,1,0);
 }
 
+void matrix4f_multiply_vector(Matrix4f *lhs, Vector3f *rhs) {
+    float dst[4];
+    for (int i = 0; i < 4; i++) {
+        dst[i] = lhs->m[i][0] * rhs->x + lhs->m[i][1] * rhs->y + lhs->m[i][2] * rhs->z + lhs->m[i][3];
+    }
+    rhs->x = dst[0];
+    rhs->y = dst[1];
+    rhs->z = dst[2];
+}
+
 void quaternion_set(Quaternion *quaternion, float x, float y, float z, float w) {
     quaternion->x = x;
     quaternion->y = y;

@@ -8,9 +8,11 @@ uniform mat4 gPerspective;
 uniform mat4 gWorld;
 uniform mat4 gCamera;
 uniform vec3 gCameraPos;
+uniform mat4 gLightDepth;
 
 out vec2 tex_coord_0;
 out vec4 frag_color_0;
+out vec4 shadow_coord_0;
 
 struct Light {
     vec3 direction;
@@ -24,8 +26,9 @@ uniform Light gLight;
 
 void main() {
     vec4 world_position = gWorld * vec4(position, 1.0);
-    gl_Position = gPerspective* gCamera * world_position;
+    gl_Position = gPerspective * gCamera * world_position;
     vec3 normal_0 = normalize((gWorld * vec4(normal,0.0)).xyz);
+    shadow_coord_0 = gLightDepth * vec4(world_position);
 
     // Diffuse lighting component
     float diffuse_factor = dot(normalize(normal_0), -gLight.direction); 

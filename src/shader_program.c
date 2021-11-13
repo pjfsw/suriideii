@@ -70,8 +70,6 @@ GLuint _sp_compile_shaders(char *vertex_shader, char *fragment_shader) {
         return 0;
     }
 
-    glUseProgram(shader_program);
-
     return shader_program;
 }
 

@@ -26,10 +26,13 @@ add_executable(suriideii
     src/texture.c
     src/meshloader.c
     src/object.c
+    src/shadowmap.c
 )
 
 configure_file(resources/shader.vs ./shader.vs COPYONLY)
 configure_file(resources/shader.fs ./shader.fs COPYONLY)
+configure_file(resources/shadow.vs ./shadow.vs COPYONLY)
+configure_file(resources/shadow.fs ./shadow.fs COPYONLY)
 #configure_file(resources/texture.jpg ./texture.jpg COPYONLY)
 #configure_file(resources/skull.obj ./skull.obj COPYONLY)
 #configure_file(resources/skull.mtl ./skull.mtl COPYONLY)

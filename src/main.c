@@ -11,6 +11,7 @@
 #include "meshloader.h"
 #include "texture.h"
 #include "shader_program.h"
+#include "shadowmap.h"
 #include "transform.h"
 #include "light.h"
 #include "object.h"
@@ -34,13 +35,22 @@ typedef struct {
     GLint sampler;
     GLint camera_pos;
     ShaderLight light;
+    GLint shadowmap;
+    GLint light_depth;
 } ShaderVariables;
+
+typedef struct {
+    GLint world;
+    GLint light_matrix;
+} ShadowmapShaderVariables;
 
 typedef struct {
     int width;
     int height;
     GLuint program;
+    GLuint shadow_program;
     ShaderVariables variables;
+    ShadowmapShaderVariables shadowmap_variables;
     Matrix4f perspective;
     SDL_Window *window;
     SDL_GLContext context;
@@ -71,6 +81,8 @@ typedef struct {
     int object_count;
     Texture **textures;
     int texture_count;
+    Shadowmap *shadowmap;
+    Matrix4f light_matrix;
 } App;
 
 Gui gui;
@@ -94,6 +106,7 @@ void update_window_size() {
 }
 
 bool init_shader_light(char *prefix, ShaderLight *light) {
+    glUseProgram(gui.program);
     char var[100];
     strcpy(var, prefix);
     strcat(var, ".direction");
@@ -142,8 +155,10 @@ bool init_shader_light(char *prefix, ShaderLight *light) {
     return true;
 }
 
-bool assign_uniform(GLint *uniform, char *name) {
-    *uniform = glGetUniformLocation(gui.program, name);
+bool assign_uniform(GLuint shader_program, GLint *uniform, char *name) {
+    glUseProgram(shader_program);
+
+    *uniform = glGetUniformLocation(shader_program, name);
     if (*uniform < 0) {
         fprintf(stderr, "Failed to get %s variable from shader program\n", name);
         return false;
@@ -221,23 +236,30 @@ bool create_gui() {
     printf("Max texture units: %d\n", texture_units);
 
     printf("Loading shaders\n");
-    if (!(gui.program = shader_program_build("shader.vs", "shader.fs"))) {
+    if (!(gui.program = shader_program_build("shader.vs", "shader.fs")) ||
+        !assign_uniform(gui.program, &gui.variables.camera, "gCamera") ||
+        !assign_uniform(
+            gui.program, &gui.variables.perspective, "gPerspective") ||
+        !assign_uniform(gui.program, &gui.variables.world, "gWorld") ||
+        !assign_uniform(gui.program, &gui.variables.sampler, "gSampler") ||
+        !assign_uniform(gui.program, &gui.variables.camera_pos, "gCameraPos") ||
+        !assign_uniform(gui.program, &gui.variables.shadowmap, "gShadowmap") ||
+        !assign_uniform(gui.program, &gui.variables.light_depth, "gLightDepth")) {
         return false;
     }
-
-    printf("Loading location\n");
-
-    if (!assign_uniform(&gui.variables.camera, "gCamera") ||
-        !assign_uniform(&gui.variables.perspective, "gPerspective") ||
-        !assign_uniform(&gui.variables.world, "gWorld") ||
-        !assign_uniform(&gui.variables.sampler, "gSampler") ||
-        !assign_uniform(&gui.variables.camera_pos, "gCameraPos")) {
+    if (!(gui.shadow_program =
+                shader_program_build("shadow.vs", "shadow.fs")) ||
+        !assign_uniform(gui.shadow_program,
+            &gui.shadowmap_variables.light_matrix, "gLightMatrix") ||
+        !assign_uniform(
+            gui.shadow_program, &gui.shadowmap_variables.world, "gWorld")) {
         return false;
     }
 
     if (!init_shader_light("gLight", &gui.variables.light)) {
         return false;
     }
+
     printf("Init done\n");
     return true;
 }
@@ -255,12 +277,18 @@ void setup_light(Light *light, ShaderLight *sl) {
 void init_lights() {
     Light light;
     vector3f_set(&light.color, 1, 1, 1);
-    vector3f_set_and_normalize(&light.direction, 1, -0.5, 1);
+    vector3f_set_and_normalize(&light.direction, 0, 0, 1);
+    matrix4f_rotation(&app.light_matrix, 0,M_PI/4,0); 
+    //vector3f_set_and_normalize(&light.direction, 1, -0.5, 1);
+    matrix4f_multiply_vector(&app.light_matrix, &light.direction);
+    vector3f_normalize(&light.direction);
     light.ambient_intensity = 0.4;
     light.diffuse_intensity = 0.4;
     light.specular_intensity = 0.3;
     light.specular_power = 32;
-    setup_light(&light, &gui.variables.light);      
+    setup_light(&light, &gui.variables.light);    
+    glUniformMatrix4fv(gui.shadowmap_variables.light_matrix, 1, GL_TRUE, &app.light_matrix.m[0][0]);
+
 }
 
 void create_vbos() {
@@ -294,6 +322,7 @@ void destroy_app() {
             }
         }
     }
+    shadowmap_destroy(app.shadowmap);
 }
 
 bool init_app() {
@@ -344,11 +373,32 @@ bool init_app() {
     app.perspective_b = 2.0f * far_z * near_z / z_range;
     camera_reset(&app.camera);
 
+    app.shadowmap = shadowmap_create(gui.width, gui.height);
+
     return true;
+}
+
+void render_object_shadowmap(Object *object) {
+    MeshGL *gl = &object->mesh->gl;
+    glUniformMatrix4fv(gui.shadowmap_variables.world, 1, GL_TRUE, &object->transform.m.m[0][0]);
+    glBindBuffer(GL_ARRAY_BUFFER, gl->vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl->ibo);
+    glEnableClientState(GL_VERTEX_ARRAY);    
+    // Position
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
+
+    glDrawElements(GL_TRIANGLES, object->mesh->index_count, GL_UNSIGNED_INT, 0);
+    glDisableVertexAttribArray(0);    
+    glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 void render_object(Object *object) {
     MeshGL *gl = &object->mesh->gl;
+
+    glUniformMatrix4fv(
+        gui.variables.light_depth, 1, GL_TRUE, &app.light_matrix.m[0][0]);
+
     glUniformMatrix4fv(gui.variables.world, 1, GL_TRUE, &object->transform.m.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gl->vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl->ibo);
@@ -376,12 +426,32 @@ void render_object(Object *object) {
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
-void render() {
+void render_objects(void (*object_renderer)(Object *object)) {
+    for (int i = 0; i < app.object_count; i++) {
+        object_renderer(app.objects[i]);
+    }
+}
+
+void render_shadowmap() {
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glUseProgram(gui.shadow_program);
+    shadowmap_set_as_render_target(app.shadowmap);
+    render_objects(render_object_shadowmap);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void render_scene() {
+    glUseProgram(gui.program);
+    shadowmap_bind(app.shadowmap, GL_TEXTURE1);
     glUniformMatrix4fv(gui.variables.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
     glUniform3f(gui.variables.camera_pos, app.camera.position.x, app.camera.position.y, app.camera.position.z);
-    for (int i = 0; i < app.object_count; i++) {
-        render_object(app.objects[i]);
-    }
+    glUniform1i(gui.variables.shadowmap, 1);
+    render_objects(render_object);
+}
+
+void render() {
+    render_shadowmap();
+    render_scene();
 }
 
 void update_object_state(Object *object) {
@@ -391,10 +461,8 @@ void update_object_state(Object *object) {
         object->transform.rotation.y -= double_pi;
     }
 
-    object->transform.rotation.x = -M_PI/2;//app.rotation;
-    //app.transform.rotation.y = app.rotation;
+    object->transform.rotation.x = -M_PI/2;
     object->transform.rotation.z = 0;
-
     object->transform.position.y = app.mesh_y;
 
     transform_rebuild(&object->transform);

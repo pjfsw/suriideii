@@ -79,6 +79,8 @@ void matrix4f_translation(Matrix4f *m, float x, float y, float z);
 
 void matrix4f_perspective(Matrix4f *m, float x_fov, float y_fov, float a, float b);
 
+void matrix4f_multiply_vector(Matrix4f *lhs, Vector3f *rhs);
+
 // rhs = lhs * rhs
 void matrix4f_multiply(Matrix4f *lhs, Matrix4f *rhs);
 
