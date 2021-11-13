@@ -38,7 +38,6 @@ typedef struct {
 } FaceData;
 
 void _extract_face_data(char *s, FaceData *face) {
-    //printf(" Extract from %s: ", s);
     memset(face, 0, sizeof(FaceData));
     char *slash = strchr(s, '/');
     if (slash == NULL) {
@@ -52,7 +51,6 @@ void _extract_face_data(char *s, FaceData *face) {
     int len = slash-s;
     strncpy(buf, s, len);    
     face->v = atoi(buf);
-    //printf("%s,%s,%s=%d ", s, slash, buf, face->v);
     
     slash++;
     char *slash2 = strchr(slash, '/');
@@ -67,8 +65,6 @@ void _extract_face_data(char *s, FaceData *face) {
 
     slash2++;
     face->n = atoi(slash2);
-
-//    printf(" (%d,%d,%d)\n", face->v, face->t, face->n);
 }
 
 void _mesh_loader_count(Meshloader *meshloader, char *buf) {
@@ -111,19 +107,16 @@ void _mesh_loader_populate(Meshloader *meshloader, char *buf) {
     float t = 0;
 
     if (sscanf(buf, "v %f %f %f %f", &x, &y, &z, &w) > 2) {
-        //printf("Found vertex %s\n", buf);
         Vector3f *v = &meshloader->vertices[meshloader->vertex++];
         vector3f_set(v, x,y,z);
     }
     if (sscanf(buf, "vn %f %f %f", &x, &y, &z) > 2) {
-        //printf("Found normal %s\n", buf);
         Vector3f *n = &meshloader->normals[meshloader->normal++];
         n->x = x;
         n->y = y;
         n->z = z;
     }
     if (sscanf(buf, "vt %f %f %f", &u, &v, &t) > 1) {
-        //printf("Found texture %s\n", buf);
         Vector2f *tex = &meshloader->textures[meshloader->texture++];
         tex->x = u;
         tex->y = v;
@@ -142,14 +135,11 @@ void _mesh_loader_populate(Meshloader *meshloader, char *buf) {
         memcpy(&meshloader->indices[meshloader->index++], &index[0], sizeof(MeshIndex));
         memcpy(&meshloader->indices[meshloader->index++], &index[1], sizeof(MeshIndex));
         memcpy(&meshloader->indices[meshloader->index++], &index[2], sizeof(MeshIndex));
-    }  else if (index_count == 4) {
+    } 
+    if (index_count == 4) {
         memcpy(&meshloader->indices[meshloader->index++], &index[0], sizeof(MeshIndex));
         memcpy(&meshloader->indices[meshloader->index++], &index[2], sizeof(MeshIndex));
         memcpy(&meshloader->indices[meshloader->index++], &index[3], sizeof(MeshIndex));
-
-        memcpy(&meshloader->indices[meshloader->index++], &index[0], sizeof(MeshIndex));
-        memcpy(&meshloader->indices[meshloader->index++], &index[1], sizeof(MeshIndex));
-        memcpy(&meshloader->indices[meshloader->index++], &index[2], sizeof(MeshIndex));
     }
 }
 
