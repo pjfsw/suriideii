@@ -125,10 +125,28 @@ Mesh *mesh_cube() {
     return mesh;
 }
 
+void mesh_instantiate(Mesh *mesh) {
+    GLuint *vbo = &mesh->gl.vbo;
+    GLuint *vao = &mesh->gl.vao;
+    GLuint *ibo = &mesh->gl.ibo;
+
+    glGenVertexArrays(1, vao);
+    glGenBuffers(1, vbo);
+    glBindVertexArray(*vao);
+    glBindBuffer(GL_ARRAY_BUFFER, *vbo);    
+    glBufferData(GL_ARRAY_BUFFER, mesh->vertex_count*sizeof(Vertex), mesh->vertices, GL_STATIC_DRAW);
+
+    glGenBuffers(1, ibo);
+    // TODO vertex array?
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->index_count*sizeof(int), mesh->indices, GL_STATIC_DRAW);
+}
+
 void mesh_destroy(Mesh *mesh) {
     if (mesh == NULL) {
         return;
     }
+    glDeleteBuffers(1, &mesh->gl.vbo);
     if (mesh->indices != NULL) {
         free(mesh->indices);
     }

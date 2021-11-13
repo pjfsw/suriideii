@@ -25,6 +25,7 @@ add_executable(suriideii
     src/camera.c
     src/texture.c
     src/meshloader.c
+    src/object.c
 )
 
 configure_file(resources/shader.vs ./shader.vs COPYONLY)

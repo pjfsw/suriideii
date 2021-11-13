@@ -13,6 +13,7 @@
 #include "shader_program.h"
 #include "transform.h"
 #include "light.h"
+#include "object.h"
 
 #define REQ_MAJOR_VERSION 4
 #define REQ_MINOR_VERSION 2
@@ -38,9 +39,6 @@ typedef struct {
 typedef struct {
     int width;
     int height;
-    GLuint vao;
-    GLuint vbo;
-    GLuint ibo;
     GLuint program;
     ShaderVariables variables;
     Matrix4f perspective;
@@ -61,17 +59,18 @@ typedef struct {
     int frames;
     int fps;
     int frame_time;
-    float rotation;
-    float pos_index;
     double fov;
     float perspective_a;
     float perspective_b;
-    Mesh *mesh;
-    Transform transform;
     Camera camera;
     Movement movement;    
-    Texture *texture;
     float mesh_y;
+    Mesh **meshes;
+    int mesh_count;
+    Object **objects;
+    int object_count;
+    Texture **textures;
+    int texture_count;
 } App;
 
 Gui gui;
@@ -264,44 +263,57 @@ void init_lights() {
     setup_light(&light, &gui.variables.light);      
 }
 
-void create_vbo(Mesh *mesh) {
-
-    GLuint *vbo = &gui.vbo;
-    GLuint *vao = &gui.vao;
-    GLuint *ibo = &gui.ibo;
-
-    glGenVertexArrays(1, vao);
-    glGenBuffers(1, vbo);
-    glBindVertexArray(*vao);
-    glBindBuffer(GL_ARRAY_BUFFER, *vbo);    
-    glBufferData(GL_ARRAY_BUFFER, mesh->vertex_count*sizeof(Vertex), mesh->vertices, GL_STATIC_DRAW);
-
-    glGenBuffers(1, ibo);
-    // TODO vertex array?
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->index_count*sizeof(int), mesh->indices, GL_STATIC_DRAW);
-}
-
-void destroy_vbo() {
-    glDeleteBuffers(1, &gui.vbo);
+void create_vbos() {
+    for (int i = 0; i < app.mesh_count; i++) {
+        if (app.meshes[i] != NULL) {
+            mesh_instantiate(app.meshes[i]);
+        }
+    }
 }
 
 void destroy_app() {
-    mesh_destroy(app.mesh);
-    texture_destroy(app.texture);
+    if (app.objects != NULL) {
+        for (int i = 0; i < app.object_count; i++) {
+            if (app.objects[i] != NULL) {
+                object_destroy(app.objects[i]);
+            }
+        }
+        free(app.objects);
+    }
+    if (app.meshes != NULL) {
+        for (int i = 0; i < app.mesh_count; i++) {
+            if (app.meshes[i] != NULL) {
+                mesh_destroy(app.meshes[i]);
+            }
+        }        
+    }
+    if (app.textures != NULL) {
+        for (int i = 0; i < app.texture_count; i++) {
+            if (app.textures[i] != NULL) {
+                texture_destroy(app.textures[i]);
+            }
+        }
+    }
 }
 
 bool init_app() {
-    //app.mesh = mesh_loader_load("091_W_Aya_100K.obj");
-    app.mesh = mesh_loader_load("skull.obj");
-    if (app.mesh == NULL) {
-        app.mesh = mesh_cube();
-    }
-    //app.texture = texture_create("091_W_Aya_2K_01.jpg");
-    app.texture = texture_create("skull.jpg");    
-    //app.texture = texture_create("texture.jpg");
-    if (app.texture == NULL) {
+    app.texture_count = 1;
+    app.textures = calloc(app.texture_count, sizeof(Texture*));
+    app.textures[0] = texture_create("skull.jpg");
+    if (app.textures[0] == NULL) {
         return false;
+    }
+    app.mesh_count = 1;
+    app.meshes = calloc(app.mesh_count, sizeof(Mesh*));
+    app.meshes[0] = mesh_loader_load("skull.obj");
+    if (app.meshes[0] == NULL) {
+        app.meshes[0] = mesh_cube();
+    }
+
+    app.object_count = 3;
+    app.objects = calloc(app.object_count, sizeof(Object*));
+    for (int i = 0; i < app.object_count; i++) {
+        app.objects[i] = object_create(app.meshes[0], app.textures[0]);
     }
     app.fov = 90;
     float near_z = 1;
@@ -310,19 +322,23 @@ bool init_app() {
     app.perspective_a = (-far_z - near_z) / z_range;
     app.perspective_b = 2.0f * far_z * near_z / z_range;
     camera_reset(&app.camera);
-    transform_reset(&app.transform);
+    for (int i = 0; i < app.object_count; i++) {
+        transform_reset(&app.objects[i]->transform);
+        app.objects[i]->transform.rotation.y = (float)i*M_PI/2;
+        app.objects[i]->transform.position.z = i*2+3;
+
+    }
     return true;
 }
 
-void render() {
-    glUniformMatrix4fv(gui.variables.world, 1, GL_TRUE, &app.transform.m.m[0][0]);
-    glUniformMatrix4fv(gui.variables.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
-    glUniform3f(gui.variables.camera_pos, app.camera.position.x, app.camera.position.y, app.camera.position.z);
-    glBindBuffer(GL_ARRAY_BUFFER, gui.vbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gui.ibo);
+void render_object(Object *object) {
+    MeshGL *gl = &object->mesh->gl;
+    glUniformMatrix4fv(gui.variables.world, 1, GL_TRUE, &object->transform.m.m[0][0]);
+    glBindBuffer(GL_ARRAY_BUFFER, gl->vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl->ibo);
     glEnableClientState(GL_VERTEX_ARRAY);    
 
-    texture_bind(app.texture, GL_TEXTURE0);
+    texture_bind(object->texture, GL_TEXTURE0);
     glUniform1i(gui.variables.sampler, 0);
     // Position
     glEnableVertexAttribArray(0);
@@ -338,34 +354,45 @@ void render() {
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)size);
 
-
-    glDrawElements(GL_TRIANGLES, app.mesh->index_count, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, object->mesh->index_count, GL_UNSIGNED_INT, 0);
     glDisableVertexAttribArray(0);    
     glDisableVertexAttribArray(1);    
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
-void update_state() {
-    app.rotation += app.delta_time;
+void render() {
+    glUniformMatrix4fv(gui.variables.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
+    glUniform3f(gui.variables.camera_pos, app.camera.position.x, app.camera.position.y, app.camera.position.z);
+    for (int i = 0; i < app.object_count; i++) {
+        render_object(app.objects[i]);
+    }
+}
+
+void update_object_state(Object *object) {
+    object->transform.rotation.y += app.delta_time;
     float double_pi = 2.0f * M_PI;
-    if (app.rotation > double_pi) {
-        app.rotation -= double_pi;
-    }
-    app.pos_index += app.delta_time;
-    if (app.pos_index > double_pi) {
-        app.pos_index -= double_pi;
+    if (object->transform.rotation.y > double_pi) {
+        object->transform.rotation.y -= double_pi;
     }
 
-    app.transform.scale = 0.2; // 0.9 + 0.2 * fabs(cos(app.pos_index));
-    app.transform.rotation.x = -M_PI/2;//app.rotation;
-    app.transform.rotation.y = app.rotation;
-    app.transform.rotation.z = 0;
+    object->transform.scale = 0.2; // 0.9 + 0.2 * fabs(cos(app.pos_index));
+    object->transform.rotation.x = -M_PI/2;//app.rotation;
+    //app.transform.rotation.y = app.rotation;
+    object->transform.rotation.z = 0;
 
-    app.transform.position.x = 0;
-    app.transform.position.y = app.mesh_y;
-    app.transform.position.z = 5.0;
+    object->transform.position.y = app.mesh_y;
 
-    transform_rebuild(&app.transform);
+    transform_rebuild(&object->transform);
+}
+
+void update_state() {
+    for (int i = 0; i < app.object_count; i++) {
+        Object *object = app.objects[i];
+        if (object != NULL) {
+            object->transform.position.x = (i-1)*6;
+            update_object_state(object);
+        }
+    }
 
     if (app.movement.forward) {
         camera_move(&app.camera, false, app.delta_time);
@@ -471,7 +498,7 @@ int main(int argc, char **argv) {
     //glDisable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST); 
     init_lights();
-    create_vbo(app.mesh);
+    create_vbos(app.objects, app.object_count);
     SDL_SetRelativeMouseMode(true);
     SDL_GL_SetSwapInterval(1);    
     glUniformMatrix4fv(gui.variables.perspective, 1, GL_TRUE, &gui.perspective.m[0][0]);
@@ -485,7 +512,6 @@ int main(int argc, char **argv) {
         render();
         SDL_GL_SwapWindow(gui.window);
     }
-    destroy_vbo();
     destroy_app();
     destroy_gui();
 }
