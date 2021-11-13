@@ -185,9 +185,8 @@ void _mesh_loader_generate(Meshloader *meshloader) {
 
     bool *used = calloc(mesh->vertex_count, sizeof(bool));
 
-    char out[6][50];
-
     int copies = 0;
+    int ignored_count = 0;
     for (int i = 0; i < mesh->index_count; i++) {
         copies = i+1;
         MeshIndex *mi = &meshloader->indices[i];
@@ -202,23 +201,17 @@ void _mesh_loader_generate(Meshloader *meshloader) {
                 if (!vector3f_equals(&v.position, &other->position) ||
                     !vector3f_equals(&v.normal, &other->normal) ||
                     !vector2f_equals(&v.texture, &other->texture)) {
-                    printf(
-                        "Warning reusing vertex with different properties "
-                        "(V1=%s,N1=%s,T1=%s) <-> (V2=%s,N2=%s,T2=%s)\n",
-                        vector3f_to_string(&v.position, out[0]),
-                        vector3f_to_string(&v.normal, out[1]),
-                        vector2f_to_string(&v.texture, out[2]),
-                        vector3f_to_string(&other->position, out[3]),
-                        vector3f_to_string(&other->normal, out[4]),
-                        vector2f_to_string(&other->texture, out[5]));
+                        ignored_count++;
                 }
+            } else {
+                memcpy(other, &v, sizeof(Vertex));                
+                used[index] = true;
             }
-            memcpy(other, &v, sizeof(Vertex));
-            used[index] = true;
             mesh->indices[i] = index;
         }
     }
     printf("Copied %d indices\n", copies);
+    printf("%d vertex/normal/texture combinations were ignored\n", ignored_count);
     free(used);
 }
 

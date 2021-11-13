@@ -71,6 +71,7 @@ typedef struct {
     Camera camera;
     Movement movement;    
     Texture *texture;
+    float mesh_y;
 } App;
 
 Gui gui;
@@ -355,14 +356,14 @@ void update_state() {
         app.pos_index -= double_pi;
     }
 
-    app.transform.scale = 0.08; // 0.9 + 0.2 * fabs(cos(app.pos_index));
+    app.transform.scale = 0.2; // 0.9 + 0.2 * fabs(cos(app.pos_index));
     app.transform.rotation.x = -M_PI/2;//app.rotation;
     app.transform.rotation.y = app.rotation;
-    app.transform.rotation.z = 0;//app.rotation;
+    app.transform.rotation.z = 0;
 
-    app.transform.position.x = 0;//0.5*cos(app.pos_index);
-    app.transform.position.y = -0.5;//0.5*sin(2*app.pos_index);
-    app.transform.position.z = 4.0;
+    app.transform.position.x = 0;
+    app.transform.position.y = app.mesh_y;
+    app.transform.position.z = 5.0;
 
     transform_rebuild(&app.transform);
 
@@ -424,15 +425,27 @@ bool handle_events() {
     SDL_Event e;
     bool down;
     while (SDL_PollEvent(&e)) {
+        if (e.type == SDL_KEYDOWN) {
+            if (e.key.keysym.scancode == SDL_SCANCODE_PAGEDOWN) {
+                app.mesh_y -= 0.1;
+                return true;
+            } else if (e.key.keysym.scancode == SDL_SCANCODE_PAGEUP) {
+                app.mesh_y += 0.1;
+                return true;
+            } else if (e.key.keysym.scancode == SDL_SCANCODE_HOME) {
+                app.mesh_y = 0;
+                return true;
+            } else if (e.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                return false;
+            }
+        }
+
         switch (e.type) {
             case SDL_QUIT:
                 return false;
             case SDL_KEYDOWN:
             case SDL_KEYUP:
                 down = e.type == SDL_KEYDOWN;
-                if (down && e.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
-                    return false;
-                }
                 handle_camera_keys((char)e.key.keysym.sym, down);
                 break;
             case SDL_MOUSEMOTION:
