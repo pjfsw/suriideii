@@ -86,6 +86,7 @@ void update_window_size() {
     float ar = (float)(gui.height) / (float)(gui.width);
 
     matrix4f_perspective(&gui.perspective, fov, ar, app.perspective_a, app.perspective_b);
+    glUniformMatrix4fv(gui.variables.perspective, 1, GL_TRUE, &gui.perspective.m[0][0]);
 }
 
 bool create_gui() {
@@ -173,7 +174,7 @@ bool create_gui() {
 }
 
 void init_lights() {
-    lighting_set_default_reflection(app.lighting, 0.3, 0.4, 0.3, 32);
+    lighting_set_default_reflection(app.lighting, 0.3, 0.6, 0.3, 32);
     lighting_create_directional(app.lighting, 0.7, -0.3, 1, 0.9, 0.9, 1);
     lighting_set_default_reflection(app.lighting, 0.2, 0.5, 0.4, 32);
     lighting_set_default_attenuation(app.lighting, 0.01, 0.01, 0.006);
@@ -260,7 +261,7 @@ bool init_app() {
 
     app.fov = 90;
     app.near_z = 1;
-    app.far_z = 50;
+    app.far_z = 60;
     float z_range = app.near_z - app.far_z;
     app.perspective_a = (-app.far_z - app.near_z) / z_range;
     app.perspective_b = 2.0f * app.far_z * app.near_z / z_range;
@@ -436,15 +437,17 @@ int main(int argc, char **argv) {
         return 1;
     }
     update_window_size();
+    init_lights();
+    create_vbos(app.objects, app.object_count);
+
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CW);
     glCullFace(GL_BACK);
     glEnable(GL_DEPTH_TEST); 
-    init_lights();
-    create_vbos(app.objects, app.object_count);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_CONSTANT_ALPHA);    
     SDL_SetRelativeMouseMode(true);
     SDL_GL_SetSwapInterval(1);    
-    glUniformMatrix4fv(gui.variables.perspective, 1, GL_TRUE, &gui.perspective.m[0][0]);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     SDL_GL_SwapWindow(gui.window);

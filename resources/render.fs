@@ -84,6 +84,9 @@ void main() {
         total_light += get_point_light(gPointLight[i]);
     }
 
-    frag_color = total_light * texture2D(gSampler, tex_coord_0);
+	float distance = abs(distance(gCameraPos, world_position_0.xyz));
+	float opacity = clamp((distance-50) / 10, 0, 1);
+
+    frag_color = total_light * vec4(1,1,1,1-opacity) * vec4(texture2D(gSampler, tex_coord_0).xyz, 1);
 }
 
