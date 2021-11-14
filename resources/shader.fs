@@ -21,20 +21,18 @@ uniform sampler2D gShadowmap;
 uniform vec3 gCameraPos;
 
 float get_diffuse_component(Light light) {
-    // Diffuse lighting component
     float diffuse_factor = dot(normalize(normal_0), -light.direction); 
     return diffuse_factor * light.diffuse_intensity;
 }
 
 float get_specular_component(Light light) {
-    // Specular lighting component
-    vec3 reflected_light = normalize(reflect(-gLight.direction, normal_0));
+    vec3 reflected_light = normalize(reflect(-light.direction, normal_0));
     vec3 view_vector = normalize(world_position_0.xyz - gCameraPos);
     float specular_factor = dot(view_vector, reflected_light);
     float specular_intensity = 0;
     if (specular_factor > 0) {
-        specular_factor = pow(specular_factor, gLight.specular_power);
-        specular_intensity = gLight.specular_intensity * specular_factor;
+        specular_factor = pow(specular_factor, light.specular_power);
+        specular_intensity = light.specular_intensity * specular_factor;
     }
     return specular_intensity;
 }
@@ -49,7 +47,7 @@ float get_visibility() {
     float depth = texture(gShadowmap, uv_coord).x;
 
     if (depth  <  z + 0.0001){
-        visibility = 0.8;
+        visibility = 0.5;
     }
     return visibility;
 }

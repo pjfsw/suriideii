@@ -36,7 +36,7 @@ typedef struct {
     GLint camera_pos;
     ShaderLight light;
     GLint shadowmap;
-    GLint light_depth;
+    GLint light_matrix;
 } ShaderVariables;
 
 typedef struct {
@@ -245,13 +245,13 @@ bool create_gui() {
         !assign_uniform(gui.program, &gui.variables.sampler, "gSampler") ||
         !assign_uniform(gui.program, &gui.variables.camera_pos, "gCameraPos") ||
         !assign_uniform(gui.program, &gui.variables.shadowmap, "gShadowmap") ||
-        !assign_uniform(gui.program, &gui.variables.light_depth, "gLightDepth")) {
+        !assign_uniform(gui.program, &gui.variables.light_matrix, "gLightTransform")) {
         return false;
     }
     if (!(gui.shadow_program =
                 shader_program_build("shadow.vs", "shadow.fs")) ||
         !assign_uniform(gui.shadow_program,
-            &gui.shadowmap_variables.light_matrix, "gLightMatrix") ||
+            &gui.shadowmap_variables.light_matrix, "gLightTransform") ||
         !assign_uniform(
             gui.shadow_program, &gui.shadowmap_variables.world, "gWorld")) {
         return false;
@@ -368,7 +368,7 @@ bool init_app() {
 
     app.fov = 90;
     float near_z = 1;
-    float far_z = 30;
+    float far_z = 50;
     float z_range = near_z - far_z;
     app.perspective_a = (-far_z - near_z) / z_range;
     app.perspective_b = 2.0f * far_z * near_z / z_range;
@@ -398,7 +398,7 @@ void render_object(Object *object) {
     MeshGL *gl = &object->mesh->gl;
 
     glUniformMatrix4fv(
-        gui.variables.light_depth, 1, GL_TRUE, &app.light_camera.m.m[0][0]);
+        gui.variables.light_matrix, 1, GL_TRUE, &app.light_camera.m.m[0][0]);
 
     glUniformMatrix4fv(gui.variables.world, 1, GL_TRUE, &object->transform.m.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gl->vbo);
