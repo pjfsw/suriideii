@@ -19,7 +19,6 @@
 #define REQ_MINOR_VERSION 2
 
 typedef struct {
-    GLint direction;
     GLint color;
     GLint ambient_intensity;
     GLint diffuse_intensity; 
@@ -28,13 +27,30 @@ typedef struct {
 } ShaderLight;
 
 typedef struct {
+    ShaderLight light;
+    GLint direction;
+} ShaderDirectionalLight;
+
+typedef struct {
+    GLint constant;
+    GLint linear;
+    GLint exponential;
+} ShaderAttenuation;
+
+typedef struct {
+    ShaderLight light;
+    GLint position;
+    ShaderAttenuation attenuation;    
+} ShaderPointLight;
+
+typedef struct {
     GLint camera;
     GLint perspective;
     GLint world;
     GLint sampler;
     GLint camera_pos;
-    ShaderLight light;
-    GLint light_matrix;
+    ShaderDirectionalLight light;
+    ShaderPointLight point_light;
 } ShaderVariables;
 
 typedef struct {
@@ -96,17 +112,20 @@ void update_window_size() {
     matrix4f_perspective(&gui.perspective, fov, ar, app.perspective_a, app.perspective_b);
 }
 
+bool assign_uniform(GLuint shader_program, GLint *uniform, char *name) {
+    glUseProgram(shader_program);
+
+    *uniform = glGetUniformLocation(shader_program, name);
+    if (*uniform < 0) {
+        fprintf(stderr, "Failed to get %s variable from shader program\n", name);
+        return false;
+    }
+    return true;
+}
+
 bool init_shader_light(char *prefix, ShaderLight *light) {
     glUseProgram(gui.render_program);
     char var[100];
-    strcpy(var, prefix);
-    strcat(var, ".direction");
-    light->direction = glGetUniformLocation(gui.render_program, var);
-    if (light->direction < 0) {
-        fprintf(
-            stderr, "Failed to get %s variable from fragment shader\n", var);
-        return false;
-    }
     strcpy(var, prefix);
     strcat(var, ".color");
     light->color = glGetUniformLocation(gui.render_program, var);
@@ -146,15 +165,50 @@ bool init_shader_light(char *prefix, ShaderLight *light) {
     return true;
 }
 
-bool assign_uniform(GLuint shader_program, GLint *uniform, char *name) {
-    glUseProgram(shader_program);
-
-    *uniform = glGetUniformLocation(shader_program, name);
-    if (*uniform < 0) {
-        fprintf(stderr, "Failed to get %s variable from shader program\n", name);
+bool init_shader_directional_light(char *prefix, ShaderDirectionalLight *light) {
+    char var[100];
+    strcpy(var, prefix);
+    strcat(var, ".direction");
+    
+    if (!assign_uniform(gui.render_program, &light->direction, var)) {
         return false;
     }
-    return true;
+    strcpy(var, prefix);
+    strcat(var, ".light");
+    return init_shader_light(var, &light->light);
+}
+
+bool init_shader_point_light(char *prefix, ShaderPointLight *light) {
+    char var[100];
+    strcpy(var, prefix);
+    strcat(var, ".position");
+
+    if (!assign_uniform(gui.render_program, &light->position, var)) {
+        return false;
+    }
+
+    strcpy(var, prefix);
+    strcat(var, ".attenuation.constant");
+    if (!assign_uniform(gui.render_program, &light->attenuation.constant, var)) {
+        return false;
+    }
+
+    strcpy(var, prefix);
+    strcat(var, ".attenuation.linear");
+    if (!assign_uniform(gui.render_program, &light->attenuation.linear, var)) {
+        return false;
+    }
+
+    strcpy(var, prefix);
+    strcat(var, ".attenuation.exponential");
+    if (!assign_uniform(gui.render_program, &light->attenuation.exponential, var)) {
+        return false;
+    }
+
+    strcpy(var, prefix);
+    strcat(var, ".light");
+    return init_shader_light(var, &light->light);
+
 }
 
 bool create_gui() {
@@ -237,7 +291,8 @@ bool create_gui() {
         return false;
     }
 
-    if (!init_shader_light("gLight", &gui.variables.light)) {
+    if (!init_shader_directional_light("gLight", &gui.variables.light) ||
+        !init_shader_point_light("gPointLight", &gui.variables.point_light)) {
         return false;
     }
 
@@ -246,8 +301,6 @@ bool create_gui() {
 }
 
 void setup_light(Light *light, ShaderLight *sl) {
-    glUniform3f(sl->direction, light->direction.x, light->direction.y,
-        light->direction.z);
     glUniform3f(sl->color, light->color.x, light->color.y, light->color.z);
     glUniform1f(sl->ambient_intensity, light->ambient_intensity);
     glUniform1f(sl->diffuse_intensity, light->diffuse_intensity);
@@ -255,15 +308,43 @@ void setup_light(Light *light, ShaderLight *sl) {
     glUniform1f(sl->specular_power, light->specular_power);
 }
 
+void setup_directional_light(DirectionalLight *light, ShaderDirectionalLight *sl) {
+    setup_light(&light->light, &sl->light);
+    glUniform3f(sl->direction, light->direction.x, light->direction.y,
+        light->direction.z);   
+}
+
+void setup_point_light(PointLight *light, ShaderPointLight *sl) {
+    setup_light(&light->light, &sl->light);
+    glUniform3f(sl->position, light->position.x, light->position.y, light->position.z);
+    glUniform1f(sl->attenuation.constant, light->attenuation.constant);
+    glUniform1f(sl->attenuation.linear, light->attenuation.linear);
+    glUniform1f(sl->attenuation.exponential, light->attenuation.exponential);
+}
+
 void init_lights() {
-    Light light;
-    vector3f_set(&light.color, 1, 1, 1);
-    vector3f_set_and_normalize(&light.direction, 0.5, -0.3, 1);
-    light.ambient_intensity = 0.4;
-    light.diffuse_intensity = 0.5;
-    light.specular_intensity = 0.3;
-    light.specular_power = 32;
-    setup_light(&light, &gui.variables.light);    
+    DirectionalLight light;
+    vector3f_set_and_normalize(&light.direction, 0.7, -0.3, 1);
+    vector3f_set(&light.light.color, 0.9, 0.9, 1);
+    light.light.ambient_intensity = 0.45;
+    light.light.diffuse_intensity = 0.3;
+    light.light.specular_intensity = 0.2;
+    light.light.specular_power = 32;
+    setup_directional_light(&light, &gui.variables.light);
+
+    PointLight point_light;
+    vector3f_set(&point_light.position, 0, 4, 10);
+    point_light.attenuation.constant = 0.1;
+    point_light.attenuation.linear = 0.2;
+    point_light.attenuation.exponential = 0.2;
+
+    vector3f_set(&point_light.light.color, 1, 0.5, 0.5);
+    point_light.light.ambient_intensity = 0.2;
+    point_light.light.diffuse_intensity = 0.4;
+    point_light.light.specular_intensity = 0.4;
+    point_light.light.specular_power = 32;
+
+    setup_point_light(&point_light, &gui.variables.point_light);
 }
 
 void create_vbos() {
