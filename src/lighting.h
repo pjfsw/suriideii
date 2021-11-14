@@ -10,50 +10,13 @@
 
 #define NUMBER_OF_POINT_LIGHTS 8
 
-typedef struct {
-    GLint color;
-    GLint ambient_intensity;
-    GLint diffuse_intensity; 
-    GLint specular_intensity;
-    GLint specular_power;
-} ShaderLight;
-
-typedef struct {
-    ShaderLight light;
-    GLint direction;
-} ShaderDirectionalLight;
-
-typedef struct {
-    GLint constant;
-    GLint linear;
-    GLint exponential;
-} ShaderAttenuation;
-
-typedef struct {
-    ShaderLight light;
-    GLint position;
-    ShaderAttenuation attenuation;    
-} ShaderPointLight;
-
-typedef struct {
-    ShaderPointLight shader;
-    PointLight *light;
-} LightingPointLight;
-
-typedef struct {
-    ShaderDirectionalLight shader;
-    DirectionalLight *light;
-} LightingDirectionalLight;
-
-typedef struct {
-    GLuint shader_program;
-    GLint shader_point_light_count;
-    LightingDirectionalLight directional_light;
-    LightingPointLight point_lights[NUMBER_OF_POINT_LIGHTS];
-    int point_light_count;
-} Lighting;
+typedef struct _Lighting Lighting;
 
 Lighting *lighting_create(GLuint shader_program);
+
+void lighting_set_default_reflection(Lighting *lighting, float ambient, float diffuse, float specular, float specular_power);
+
+void lighting_set_default_attenuation(Lighting *lighting, float constant, float linear, float exponential);
 
 DirectionalLight *lighting_create_directional(Lighting *lighting, float x, float y, float z, float red, float green, float blue);
 

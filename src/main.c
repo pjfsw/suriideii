@@ -173,9 +173,12 @@ bool create_gui() {
 }
 
 void init_lights() {
+    lighting_set_default_reflection(app.lighting, 0.3, 0.4, 0.3, 32);
     lighting_create_directional(app.lighting, 0.7, -0.3, 1, 0.9, 0.9, 1);
-    lighting_create_point(app.lighting, 7, 8, 8, 1, 0.5, 0.5);
-    lighting_create_point(app.lighting, -6, 8, 5, 0.3, 0.3, 1.0);
+    lighting_set_default_reflection(app.lighting, 0.2, 0.5, 0.4, 32);
+    lighting_set_default_attenuation(app.lighting, 0.01, 0.01, 0.006);
+    lighting_create_point(app.lighting, 13, 8, 15, 1, 0.5, 0.5);
+    lighting_create_point(app.lighting, -12, 8, 12, 0.3, 0.3, 1.0);
 }
 
 void create_vbos() {
