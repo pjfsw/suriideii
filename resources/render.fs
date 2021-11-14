@@ -31,7 +31,8 @@ in vec4 world_position_0;
 out vec4 frag_color;
 
 uniform DirectionalLight gLight;
-uniform PointLight gPointLight;
+uniform PointLight gPointLight[8];
+uniform int gPointLightCount;
 
 uniform sampler2D gSampler;
 uniform vec3 gCameraPos;
@@ -78,9 +79,10 @@ vec4 get_point_light(PointLight light) {
 }
 
 void main() {
-    vec4 directional_light = get_directional_light(gLight);
-    vec4 point_light = get_point_light(gPointLight);
-    vec4 total_light = directional_light + point_light;
+    vec4 total_light = get_directional_light(gLight);
+    for (int i = 0; i < gPointLightCount; i++) {
+        total_light += get_point_light(gPointLight[i]);
+    }
 
     frag_color = total_light * texture2D(gSampler, tex_coord_0);
 }

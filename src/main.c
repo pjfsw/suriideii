@@ -18,6 +18,8 @@
 #define REQ_MAJOR_VERSION 4
 #define REQ_MINOR_VERSION 2
 
+#define NUMBER_OF_POINT_LIGHTS 8
+
 typedef struct {
     GLint color;
     GLint ambient_intensity;
@@ -50,7 +52,8 @@ typedef struct {
     GLint sampler;
     GLint camera_pos;
     ShaderDirectionalLight light;
-    ShaderPointLight point_light;
+    ShaderPointLight point_light[NUMBER_OF_POINT_LIGHTS];
+    GLint point_light_count;
 } ShaderVariables;
 
 typedef struct {
@@ -291,8 +294,17 @@ bool create_gui() {
         return false;
     }
 
-    if (!init_shader_directional_light("gLight", &gui.variables.light) ||
-        !init_shader_point_light("gPointLight", &gui.variables.point_light)) {
+    if (!init_shader_directional_light("gLight", &gui.variables.light)) {
+        return false;
+    }
+    char s[100];
+    for (int i = 0; i < NUMBER_OF_POINT_LIGHTS; i++) {
+        sprintf(s, "gPointLight[%d]", i);
+        if (!init_shader_point_light(s, &gui.variables.point_light[i])) {
+            return false;
+        }
+    }
+    if (!assign_uniform(gui.render_program, &gui.variables.point_light_count, "gPointLightCount")) {
         return false;
     }
 
@@ -333,18 +345,33 @@ void init_lights() {
     setup_directional_light(&light, &gui.variables.light);
 
     PointLight point_light;
-    vector3f_set(&point_light.position, 0, 4, 10);
+
+    vector3f_set(&point_light.position, 7, 8, 8);
     point_light.attenuation.constant = 0.1;
-    point_light.attenuation.linear = 0.2;
-    point_light.attenuation.exponential = 0.2;
+    point_light.attenuation.linear = 0.05;
+    point_light.attenuation.exponential = 0.02;
 
     vector3f_set(&point_light.light.color, 1, 0.5, 0.5);
     point_light.light.ambient_intensity = 0.2;
     point_light.light.diffuse_intensity = 0.4;
     point_light.light.specular_intensity = 0.4;
     point_light.light.specular_power = 32;
+    setup_point_light(&point_light, &gui.variables.point_light[0]);
 
-    setup_point_light(&point_light, &gui.variables.point_light);
+    vector3f_set(&point_light.position, -6, 8, 5);
+    point_light.attenuation.constant = 0.1;
+    point_light.attenuation.linear = 0.05;
+    point_light.attenuation.exponential = 0.02;
+
+    vector3f_set(&point_light.light.color, 0, 0, 1.0);
+    point_light.light.ambient_intensity = 0.2;
+    point_light.light.diffuse_intensity = 0.4;
+    point_light.light.specular_intensity = 0.4;
+    point_light.light.specular_power = 32;
+    setup_point_light(&point_light, &gui.variables.point_light[1]);
+
+    glUniform1i(gui.variables.point_light_count, 2);
+
 }
 
 void create_vbos() {
