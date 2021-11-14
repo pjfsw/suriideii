@@ -10,14 +10,12 @@ struct Light {
 };
 
 in vec2 tex_coord_0;
-in vec4 shadow_coord_0;
 in vec3 normal_0;
 in vec4 world_position_0;
 out vec4 frag_color;
 
 uniform Light gLight;
 uniform sampler2D gSampler;
-uniform sampler2D gShadowmap;
 uniform vec3 gCameraPos;
 
 float get_diffuse_component(Light light) {
@@ -37,27 +35,11 @@ float get_specular_component(Light light) {
     return specular_intensity;
 }
 
-float get_visibility() {
-    vec3 pshadow_coord = shadow_coord_0.xyz / shadow_coord_0.w;
-    vec2 uv_coord;
-    uv_coord.x = 0.5 * pshadow_coord.x + 0.5;
-    uv_coord.y = 0.5 * pshadow_coord.y + 0.5;
-    float z = 0.5 * pshadow_coord.z + 0.5;
-    float visibility = 1.0;    
-    float depth = texture(gShadowmap, uv_coord).x;
-
-    if (depth  <  z + 0.0001){
-        visibility = 0.5;
-    }
-    return visibility;
-}
-
 void main() {
     float diffuse_intensity = get_diffuse_component(gLight);
     float specular_intensity = get_specular_component(gLight);
-    float visibility = get_visibility();
 
-    float intensity = visibility * (specular_intensity + diffuse_intensity) + gLight.ambient_intensity;
+    float intensity = specular_intensity + diffuse_intensity + gLight.ambient_intensity;
     frag_color = clamp(intensity, 0, 1) * vec4(gLight.color, 1) * texture2D(gSampler, tex_coord_0);
 }
 

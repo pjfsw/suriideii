@@ -51,6 +51,12 @@ float _camera_get_movement(double delta_time) {
     return 10.0 * delta_time;
 }
 
+void camera_move_unrestrained(Camera *camera, double delta) {
+    Vector3f temp;
+    vector3f_add(vector3f_multiply_scalar(delta, &camera->target, &temp),
+        &camera->position);
+}
+
 void camera_move(Camera *camera, bool backward, double delta_time) {
     double move = _camera_get_movement(delta_time);
     if (backward) {
