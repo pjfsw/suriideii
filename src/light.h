@@ -1,6 +1,9 @@
 #ifndef _LIGHT_H_
 #define _LIGHT_H_
 
+#include <GL/glew.h>
+#include <GL/gl.h>
+
 #include "algebra.h"
 
 typedef struct {

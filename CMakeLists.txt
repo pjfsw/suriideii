@@ -27,6 +27,8 @@ add_executable(suriideii
     src/meshloader.c
     src/object.c
     src/shadowmap.c
+    src/lighting.c
+    src/uniform.c
 )
 
 configure_file(resources/render.vs ./render.vs COPYONLY)
