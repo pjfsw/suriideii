@@ -283,8 +283,8 @@ void init_lights() {
     camera_look(&app.light_camera, M_PI/4, M_PI/4);
     camera_transform_rebuild(&app.light_camera);
     vector3f_copy(&app.light_camera.target, &light.direction);
-    light.ambient_intensity = 0.2;
-    light.diffuse_intensity = 0.6;
+    light.ambient_intensity = 0.3;
+    light.diffuse_intensity = 0.5;
     light.specular_intensity = 0.3;
     light.specular_power = 32;
     setup_light(&light, &gui.variables.light);    
@@ -579,7 +579,6 @@ int main(int argc, char **argv) {
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CW);
     glCullFace(GL_BACK);
-    //glDisable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST); 
     init_lights();
     create_vbos(app.objects, app.object_count);

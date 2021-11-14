@@ -20,7 +20,7 @@ Mesh *mesh_cube() {
     vector2f_set(&vertices[2].texture, 1, 1);
     vector3f_set(&vertices[3].position, -size, -size, -size);
     vector2f_set(&vertices[3].texture, 0, 1);
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         vector3f_set(&vertices[i].normal, 0,0,-1);
     }
 
@@ -33,7 +33,7 @@ Mesh *mesh_cube() {
     vector2f_set(&vertices[6].texture, 1, 0);
     vector3f_set(&vertices[7].position, -size, -size, size);
     vector2f_set(&vertices[7].texture, 0, 0);
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         vector3f_set(&vertices[i+4].normal, 0,0,1);
     }
 
@@ -48,7 +48,7 @@ Mesh *mesh_cube() {
     vector3f_set(&vertices[11].position, size, size, -size);
     vector2f_set(&vertices[11].texture, 0, 1);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         vector3f_set(&vertices[i+8].normal, 0,1,0);
     }
 
@@ -62,10 +62,9 @@ Mesh *mesh_cube() {
     vector3f_set(&vertices[15].position, -size, -size, size);
     vector2f_set(&vertices[15].texture, 0, 1);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         vector3f_set(&vertices[i+12].normal, 0,-1,0);
     }
-
 
     // left
     vector3f_set(&vertices[16].position, -size, size, size);
@@ -77,7 +76,7 @@ Mesh *mesh_cube() {
     vector3f_set(&vertices[19].position, -size, -size, size);
     vector2f_set(&vertices[19].texture, 0, 1);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         vector3f_set(&vertices[i+16].normal, -1, 0,0);
     }
 
@@ -91,7 +90,7 @@ Mesh *mesh_cube() {
     vector3f_set(&vertices[23].position, size, -size, -size);
     vector2f_set(&vertices[23].texture, 0, 1);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         vector3f_set(&vertices[i+20].normal, 1, 0,0);
     }
 
