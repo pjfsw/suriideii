@@ -16,9 +16,16 @@
 #include "lighting.h"
 #include "object.h"
 #include "uniform.h"
+#include "shadowmap.h"
 
 #define REQ_MAJOR_VERSION 4
 #define REQ_MINOR_VERSION 2
+
+typedef struct {
+    GLint sampler;
+    GLint world;
+    GLint ar;
+} HudVariables;
 
 typedef struct {
     GLint camera;
@@ -26,20 +33,29 @@ typedef struct {
     GLint world;
     GLint sampler;
     GLint camera_pos;
-    GLint hud_sampler;
-    GLint hud_world;
-    GLint hud_ar;
-} ShaderVariables;
+} RenderVariables;
+
+typedef struct {
+    GLint projection;
+    GLint world;
+    GLint camera;
+} ShadowMapVariables;
 
 typedef struct {
     int width;
     int height;
     GLuint render_program;
     GLuint hud_program;
-    ShaderVariables variables;
+    GLuint shadow_program;
+    HudVariables hud_vars;
+    ShadowMapVariables shadow_vars;
+    RenderVariables render_vars;
     Matrix4f perspective;
     SDL_Window *window;
     SDL_GLContext context;
+    Shadowmap *shadowmap;
+    Matrix4f light_projection;
+    Matrix4f light_view;
 } Gui;
 
 typedef struct {
@@ -71,6 +87,7 @@ typedef struct {
     Texture **textures;
     int texture_count;
     Lighting *lighting;
+    DirectionalLight *light;
     bool display_hud;
 } App;
 
@@ -80,6 +97,9 @@ App app;
 void destroy_gui() {
     if (gui.window != NULL) {
         SDL_DestroyWindow(gui.window);
+    }
+    if (gui.shadowmap != NULL) {
+        shadowmap_destroy(gui.shadowmap);
     }
     IMG_Quit();
     SDL_Quit();
@@ -92,7 +112,9 @@ void update_window_size() {
     float ar = (float)(gui.height) / (float)(gui.width);
 
     matrix4f_perspective(&gui.perspective, fov, ar, app.perspective_a, app.perspective_b);
-    glUniformMatrix4fv(gui.variables.perspective, 1, GL_TRUE, &gui.perspective.m[0][0]);
+    glUniformMatrix4fv(gui.render_vars.perspective, 1, GL_TRUE, &gui.perspective.m[0][0]);
+
+    matrix4f_ortho(&gui.light_projection, -50, 50, -50, 50, app.near_z, app.far_z);
 }
 
 bool create_gui() {
@@ -166,20 +188,29 @@ bool create_gui() {
 
     printf("Loading shaders\n");
     if (!(gui.render_program = shader_program_build("render.vs", "render.fs")) ||
-        !uniform_assign(gui.render_program, &gui.variables.camera, "gCamera") ||
-        !uniform_assign(
-            gui.render_program, &gui.variables.perspective, "gPerspective") ||
-        !uniform_assign(gui.render_program, &gui.variables.world, "gWorld") ||
-        !uniform_assign(gui.render_program, &gui.variables.sampler, "gSampler") ||
-        !uniform_assign(gui.render_program, &gui.variables.camera_pos, "gCameraPos")) {
+        !uniform_assign(gui.render_program, &gui.render_vars.camera, "gCamera") ||
+        !uniform_assign(gui.render_program, &gui.render_vars.perspective, "gPerspective") ||
+        !uniform_assign(gui.render_program, &gui.render_vars.world, "gWorld") ||
+        !uniform_assign(gui.render_program, &gui.render_vars.sampler, "gSampler") ||
+        !uniform_assign(gui.render_program, &gui.render_vars.camera_pos, "gCameraPos")) {
         return false;
     }
     if (!(gui.hud_program = shader_program_build("hud.vs", "hud.fs")) ||
-        !uniform_assign(gui.hud_program, &gui.variables.hud_sampler, "gSampler") ||
-        !uniform_assign(gui.hud_program, &gui.variables.hud_world, "gWorld") ||
-        !uniform_assign(gui.hud_program, &gui.variables.hud_ar, "gAspectRatio")) {
+        !uniform_assign(gui.hud_program, &gui.hud_vars.sampler, "gSampler") ||
+        !uniform_assign(gui.hud_program, &gui.hud_vars.world, "gWorld") ||
+        !uniform_assign(gui.hud_program, &gui.hud_vars.ar, "gAspectRatio")) {
         return false;
     }
+
+    if (!(gui.shadow_program = shader_program_build("shadow.vs", "shadow.fs")) ||
+        !uniform_assign(gui.shadow_program, &gui.shadow_vars.world, "gWorld") ||
+        !uniform_assign(gui.shadow_program, &gui.shadow_vars.camera, "gCamera") ||        
+        !uniform_assign(gui.shadow_program, &gui.shadow_vars.projection, "gProjection")) {
+            return false;
+    }
+
+    gui.shadowmap = shadowmap_create(gui.width, gui.height);
+
 
     printf("Init done\n");
     return true;
@@ -187,7 +218,15 @@ bool create_gui() {
 
 void init_lights() {
     lighting_set_default_reflection(app.lighting, 0.52, 0.4, 0.3, 32);
-    lighting_create_directional(app.lighting, 0.7, -0.5, 1, 0.9, 0.9, 1);
+
+    Camera camera;
+    camera_reset(&camera);
+    camera_look(&camera, M_PI/4, M_PI/4);
+    camera_move_unrestrained(&camera, -40);
+    camera_transform_rebuild(&camera);
+    memcpy(&gui.light_view, &camera.m, sizeof(Matrix4f));
+
+    app.light = lighting_create_directional(app.lighting, camera.target.x, camera.target.y, camera.target.z, 1, 1, 1);
 }
 
 void create_vbos() {
@@ -247,6 +286,7 @@ bool init_app() {
     if (app.textures[0] == NULL) {
         return false;
     }
+
     app.textures[1] = texture_create("skull.jpg");
     if (app.textures[1] == NULL) {
         return false;
@@ -292,16 +332,13 @@ bool init_app() {
     return true;
 }
 
-void render_object(Object *object) {
-    MeshGL *gl = &object->mesh->gl;
+void render_mesh(Mesh *mesh) {
+    MeshGL *gl = &mesh->gl;
 
-    glUniformMatrix4fv(gui.variables.world, 1, GL_TRUE, &object->transform.m.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gl->vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl->ibo);
     glEnableClientState(GL_VERTEX_ARRAY);    
 
-    texture_bind(object->texture, GL_TEXTURE0);
-    glUniform1i(gui.variables.sampler, 0);
     // Position
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
@@ -316,23 +353,36 @@ void render_object(Object *object) {
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)size);
 
-    glDrawElements(GL_TRIANGLES, object->mesh->index_count, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_INT, 0);
     glDisableVertexAttribArray(0);    
     glDisableVertexAttribArray(1);    
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
+
+void render_object(Object *object) {
+    texture_bind(object->texture, GL_TEXTURE0);
+    glUniform1i(gui.render_vars.sampler, 0);
+    glUniformMatrix4fv(gui.render_vars.world, 1, GL_TRUE, &object->transform.m.m[0][0]);
+    render_mesh(object->mesh);
+}
+
+void render_object_for_shadowmap(Object *object) {
+    glUniformMatrix4fv(gui.shadow_vars.world, 1, GL_TRUE, &object->transform.m.m[0][0]);
+    render_mesh(object->mesh);
+}
+
 void render_hud(Object *object) {
     MeshGL *gl = &object->mesh->gl;
 
-    glUniform1f(gui.variables.hud_ar, (float)gui.height/(float)gui.width);
-    glUniformMatrix4fv(gui.variables.hud_world, 1, GL_TRUE, &object->transform.m.m[0][0]);
+    glUniform1f(gui.hud_vars.ar, 1);
+    glUniformMatrix4fv(gui.hud_vars.world, 1, GL_TRUE, &object->transform.m.m[0][0]);
     glBindBuffer(GL_ARRAY_BUFFER, gl->vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl->ibo);
     glEnableClientState(GL_VERTEX_ARRAY);    
 
-    texture_bind(object->texture, GL_TEXTURE0);
-    glUniform1i(gui.variables.hud_sampler, 0);
+    shadowmap_bind(gui.shadowmap, GL_TEXTURE0);
+    glUniform1i(gui.hud_vars.sampler, 0);
     // Position
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
@@ -358,17 +408,35 @@ void render_objects(void (*object_renderer)(Object *object)) {
 
 void render_scene() {
     glUseProgram(gui.render_program);
-    glUniformMatrix4fv(gui.variables.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
-    glUniform3f(gui.variables.camera_pos, app.camera.position.x, app.camera.position.y, app.camera.position.z);
+    glUniformMatrix4fv(gui.render_vars.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
+    glUniform3f(gui.render_vars.camera_pos, app.camera.position.x, app.camera.position.y, app.camera.position.z);
     render_objects(render_object);
 }
 
 void render_debug() {
     glUseProgram(gui.hud_program);   
+    glDisable(GL_DEPTH_TEST);
     render_hud(app.hud_object);
+    glEnable(GL_DEPTH_TEST);
+}
+
+void render_shadows() {
+    glUseProgram(gui.shadow_program);
+    shadowmap_set_as_render_target(gui.shadowmap);
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glUniformMatrix4fv(gui.shadow_vars.camera, 1, GL_TRUE, &gui.light_view.m[0][0]);
+    //glUniformMatrix4fv(gui.shadow_vars.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
+    //glUniformMatrix4fv(gui.shadow_vars.projection, 1, GL_TRUE, &gui.light_projection.m[0][0]);
+    glUniformMatrix4fv(gui.shadow_vars.projection, 1, GL_TRUE, &gui.perspective.m[0][0]);
+
+    
+    render_objects(render_object_for_shadowmap);   
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);    
 }
 
 void render() {
+    render_shadows();
     render_scene();
     if (app.display_hud) {
         render_debug();
@@ -468,7 +536,7 @@ bool handle_events() {
                 return true;
             } else if (e.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
                 return false;
-            } else if (e.key.keysym.sym == 'h') {
+            } else if (e.key.keysym.scancode == SDL_SCANCODE_TAB) {
                 app.display_hud = !app.display_hud;
             }
         }

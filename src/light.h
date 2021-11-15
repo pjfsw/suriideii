@@ -5,6 +5,7 @@
 #include <GL/gl.h>
 
 #include "algebra.h"
+#include "camera.h"
 
 typedef struct {
     Vector3f color;

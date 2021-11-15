@@ -26,6 +26,8 @@ Shadowmap *shadowmap_create(int width, int height) {
         shadowmap_destroy(shadowmap);
         return NULL;
     }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     return shadowmap;
 }
 

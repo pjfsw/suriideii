@@ -6,5 +6,7 @@ out vec4 frag_color;
 uniform sampler2D gSampler;
 
 void main() {
-    frag_color = vec4(texture2D(gSampler, tex_coord_0).xyz, 1.0);
+    float depth = texture(gSampler, tex_coord_0).r;
+    depth = 1.0 - (1.0 - depth) * 25.0;
+    frag_color = vec4(depth, depth, depth, 1);
 }
