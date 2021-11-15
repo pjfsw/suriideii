@@ -26,12 +26,16 @@ typedef struct {
     GLint world;
     GLint sampler;
     GLint camera_pos;
+    GLint hud_sampler;
+    GLint hud_world;
+    GLint hud_ar;
 } ShaderVariables;
 
 typedef struct {
     int width;
     int height;
     GLuint render_program;
+    GLuint hud_program;
     ShaderVariables variables;
     Matrix4f perspective;
     SDL_Window *window;
@@ -62,10 +66,12 @@ typedef struct {
     Mesh **meshes;
     int mesh_count;
     Object **objects;
+    Object *hud_object;
     int object_count;
     Texture **textures;
     int texture_count;
     Lighting *lighting;
+    bool display_hud;
 } App;
 
 Gui gui;
@@ -168,18 +174,20 @@ bool create_gui() {
         !uniform_assign(gui.render_program, &gui.variables.camera_pos, "gCameraPos")) {
         return false;
     }
+    if (!(gui.hud_program = shader_program_build("hud.vs", "hud.fs")) ||
+        !uniform_assign(gui.hud_program, &gui.variables.hud_sampler, "gSampler") ||
+        !uniform_assign(gui.hud_program, &gui.variables.hud_world, "gWorld") ||
+        !uniform_assign(gui.hud_program, &gui.variables.hud_ar, "gAspectRatio")) {
+        return false;
+    }
 
     printf("Init done\n");
     return true;
 }
 
 void init_lights() {
-    lighting_set_default_reflection(app.lighting, 0.3, 0.6, 0.3, 32);
-    lighting_create_directional(app.lighting, 0.7, -0.3, 1, 0.9, 0.9, 1);
-    lighting_set_default_reflection(app.lighting, 0.2, 0.5, 0.4, 32);
-    lighting_set_default_attenuation(app.lighting, 0.01, 0.01, 0.006);
-    lighting_create_point(app.lighting, 13, 8, 15, 1, 0.5, 0.5);
-    lighting_create_point(app.lighting, -12, 8, 12, 0.3, 0.3, 1.0);
+    lighting_set_default_reflection(app.lighting, 0.52, 0.4, 0.3, 32);
+    lighting_create_directional(app.lighting, 0.7, -0.5, 1, 0.9, 0.9, 1);
 }
 
 void create_vbos() {
@@ -198,6 +206,9 @@ void destroy_app() {
             }
         }
         free(app.objects);
+    }
+    if (app.hud_object != NULL) {
+        object_destroy(app.hud_object);
     }
     if (app.meshes != NULL) {
         for (int i = 0; i < app.mesh_count; i++) {
@@ -218,6 +229,16 @@ void destroy_app() {
     }
 }
 
+Object *create_hud(Mesh **target_mesh, Texture *source_texture) {
+    app.meshes[2] = mesh_quad();
+    Object *obj = object_create(*target_mesh, source_texture);
+    vector3f_set(&obj->transform.rotation, 0, 0, 0);
+    obj->transform.scale = 0.25;
+    vector3f_set(&obj->transform.position, -0.75, 0.75, 0);
+    transform_rebuild(&obj->transform);
+    return obj;
+}
+
 bool init_app() {
     app.lighting = lighting_create(gui.render_program);
     app.texture_count = 2;
@@ -230,13 +251,14 @@ bool init_app() {
     if (app.textures[1] == NULL) {
         return false;
     }
-    app.mesh_count = 2;
+    app.mesh_count = 3;
     app.meshes = calloc(app.mesh_count, sizeof(Mesh*));
     app.meshes[0] = mesh_cube();
     app.meshes[1] = mesh_loader_load("skull.obj");
     if (app.meshes[1] == NULL) {
         app.meshes[1] = mesh_cube();
     }
+    app.hud_object = create_hud(&app.meshes[2], app.textures[0]);
 
     app.object_count = 3;
     app.objects = calloc(app.object_count, sizeof(Object*));
@@ -300,6 +322,34 @@ void render_object(Object *object) {
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
+void render_hud(Object *object) {
+    MeshGL *gl = &object->mesh->gl;
+
+    glUniform1f(gui.variables.hud_ar, (float)gui.height/(float)gui.width);
+    glUniformMatrix4fv(gui.variables.hud_world, 1, GL_TRUE, &object->transform.m.m[0][0]);
+    glBindBuffer(GL_ARRAY_BUFFER, gl->vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl->ibo);
+    glEnableClientState(GL_VERTEX_ARRAY);    
+
+    texture_bind(object->texture, GL_TEXTURE0);
+    glUniform1i(gui.variables.hud_sampler, 0);
+    // Position
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
+    long size = sizeof(Vector3f);
+    
+    // Texture
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)size);
+    size += sizeof(Vector2f);
+
+    glDrawElements(GL_TRIANGLES, object->mesh->index_count, GL_UNSIGNED_INT, 0);
+    glDisableVertexAttribArray(0);    
+    glDisableVertexAttribArray(1);    
+    glDisableClientState(GL_VERTEX_ARRAY);
+
+}
+
 void render_objects(void (*object_renderer)(Object *object)) {
     for (int i = 0; i < app.object_count; i++) {
         object_renderer(app.objects[i]);
@@ -313,8 +363,16 @@ void render_scene() {
     render_objects(render_object);
 }
 
+void render_debug() {
+    glUseProgram(gui.hud_program);   
+    render_hud(app.hud_object);
+}
+
 void render() {
     render_scene();
+    if (app.display_hud) {
+        render_debug();
+    }
 }
 
 void update_object_state(Object *object) {
@@ -410,6 +468,8 @@ bool handle_events() {
                 return true;
             } else if (e.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
                 return false;
+            } else if (e.key.keysym.sym == 'h') {
+                app.display_hud = !app.display_hud;
             }
         }
 
@@ -443,8 +503,8 @@ int main(int argc, char **argv) {
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CW);
     glCullFace(GL_BACK);
-    glEnable(GL_DEPTH_TEST); 
     glEnable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
     glBlendFunc(GL_SRC_ALPHA, GL_CONSTANT_ALPHA);    
     SDL_SetRelativeMouseMode(true);
     SDL_GL_SetSwapInterval(1);    

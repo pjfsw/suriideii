@@ -124,6 +124,42 @@ Mesh *mesh_cube() {
     return mesh;
 }
 
+Mesh *mesh_quad() {
+    Mesh *mesh = calloc(1, sizeof(Mesh));
+    mesh->vertex_count = 4;
+    mesh->vertices = calloc(mesh->vertex_count, sizeof(Vertex));
+
+    Vertex vertices[mesh->vertex_count];
+
+    double size = 1.0;
+    // front
+    vector3f_set(&vertices[0].position, -size, size, 0);
+    vector2f_set(&vertices[0].texture, 0, 0);
+    vector3f_set(&vertices[1].position, size, size, 0);
+    vector2f_set(&vertices[1].texture, 1, 0);
+    vector3f_set(&vertices[2].position, size, -size, 0);
+    vector2f_set(&vertices[2].texture, 1, 1);
+    vector3f_set(&vertices[3].position, -size, -size, 0);
+    vector2f_set(&vertices[3].texture, 0, 1);
+    for (int i = 0; i < 4; i++) {
+        vector3f_set(&vertices[i].normal, 0,0,-1);
+    }
+
+    memcpy(mesh->vertices, vertices, sizeof(Vertex)*mesh->vertex_count);
+
+    mesh->index_count = 6;
+    mesh->indices = calloc(mesh->index_count, sizeof(int));
+
+    // Create indices for a cube
+    unsigned int indices[] = {
+        0,1,2, // front
+        0,2,3
+    };
+
+    memcpy(mesh->indices, indices, sizeof(int)*mesh->index_count);
+    return mesh;
+}
+
 void mesh_instantiate(Mesh *mesh) {
     GLuint *vbo = &mesh->gl.vbo;
     GLuint *vao = &mesh->gl.vao;

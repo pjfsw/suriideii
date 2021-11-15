@@ -28,6 +28,8 @@ typedef struct {
 
 Mesh *mesh_cube();
 
+Mesh *mesh_quad();
+
 void mesh_instantiate(Mesh *mesh);
 
 void mesh_destroy(Mesh *mesh);

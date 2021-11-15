@@ -35,6 +35,8 @@ configure_file(resources/render.vs ./render.vs COPYONLY)
 configure_file(resources/render.fs ./render.fs COPYONLY)
 configure_file(resources/shadow.vs ./shadow.vs COPYONLY)
 configure_file(resources/shadow.fs ./shadow.fs COPYONLY)
+configure_file(resources/hud.vs ./hud.vs COPYONLY)
+configure_file(resources/hud.fs ./hud.fs COPYONLY)
 
 add_custom_command(TARGET suriideii POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
