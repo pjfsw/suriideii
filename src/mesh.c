@@ -134,13 +134,13 @@ Mesh *mesh_quad() {
     double size = 1.0;
     // front
     vector3f_set(&vertices[0].position, -size, size, 0);
-    vector2f_set(&vertices[0].texture, 0, 0);
+    vector2f_set(&vertices[0].texture, 0, 1);
     vector3f_set(&vertices[1].position, size, size, 0);
-    vector2f_set(&vertices[1].texture, 1, 0);
+    vector2f_set(&vertices[1].texture, 1, 1);
     vector3f_set(&vertices[2].position, size, -size, 0);
-    vector2f_set(&vertices[2].texture, 1, 1);
+    vector2f_set(&vertices[2].texture, 1, 0);
     vector3f_set(&vertices[3].position, -size, -size, 0);
-    vector2f_set(&vertices[3].texture, 0, 1);
+    vector2f_set(&vertices[3].texture, 0, 0);
     for (int i = 0; i < 4; i++) {
         vector3f_set(&vertices[i].normal, 0,0,-1);
     }

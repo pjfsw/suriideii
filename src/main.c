@@ -33,6 +33,9 @@ typedef struct {
     GLint world;
     GLint sampler;
     GLint camera_pos;
+    GLint light_space;
+    GLint shadowmap;
+    GLint light_projection;
 } RenderVariables;
 
 typedef struct {
@@ -192,7 +195,10 @@ bool create_gui() {
         !uniform_assign(gui.render_program, &gui.render_vars.perspective, "gPerspective") ||
         !uniform_assign(gui.render_program, &gui.render_vars.world, "gWorld") ||
         !uniform_assign(gui.render_program, &gui.render_vars.sampler, "gSampler") ||
-        !uniform_assign(gui.render_program, &gui.render_vars.camera_pos, "gCameraPos")) {
+        !uniform_assign(gui.render_program, &gui.render_vars.camera_pos, "gCameraPos") ||
+        !uniform_assign(gui.render_program, &gui.render_vars.light_space, "gLightSpace") ||
+        !uniform_assign(gui.render_program, &gui.render_vars.shadowmap, "gShadowMap") ||
+        !uniform_assign(gui.render_program, &gui.render_vars.light_projection, "gLightProjection")) {
         return false;
     }
     if (!(gui.hud_program = shader_program_build("hud.vs", "hud.fs")) ||
@@ -222,7 +228,7 @@ void init_lights() {
     Camera camera;
     camera_reset(&camera);
     camera_look(&camera, M_PI/4, M_PI/4);
-    camera_move_unrestrained(&camera, -40);
+    camera_move_unrestrained(&camera, -30);
     camera_transform_rebuild(&camera);
     memcpy(&gui.light_view, &camera.m, sizeof(Matrix4f));
 
@@ -408,8 +414,12 @@ void render_objects(void (*object_renderer)(Object *object)) {
 
 void render_scene() {
     glUseProgram(gui.render_program);
+    glUniformMatrix4fv(gui.render_vars.light_space, 1, GL_TRUE, &gui.light_view.m[0][0]);
     glUniformMatrix4fv(gui.render_vars.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
+    glUniformMatrix4fv(gui.render_vars.light_projection, 1, GL_TRUE, &gui.perspective.m[0][0]);
     glUniform3f(gui.render_vars.camera_pos, app.camera.position.x, app.camera.position.y, app.camera.position.z);
+    shadowmap_bind(gui.shadowmap, GL_TEXTURE1);
+    glUniform1i(gui.render_vars.shadowmap, 1);
     render_objects(render_object);
 }
 
@@ -426,10 +436,10 @@ void render_shadows() {
 
     glClear(GL_DEPTH_BUFFER_BIT);
     glUniformMatrix4fv(gui.shadow_vars.camera, 1, GL_TRUE, &gui.light_view.m[0][0]);
-    //glUniformMatrix4fv(gui.shadow_vars.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
-    //glUniformMatrix4fv(gui.shadow_vars.projection, 1, GL_TRUE, &gui.light_projection.m[0][0]);
     glUniformMatrix4fv(gui.shadow_vars.projection, 1, GL_TRUE, &gui.perspective.m[0][0]);
 
+    //glUniformMatrix4fv(gui.shadow_vars.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
+    //glUniformMatrix4fv(gui.shadow_vars.projection, 1, GL_TRUE, &gui.light_projection.m[0][0]);
     
     render_objects(render_object_for_shadowmap);   
     glBindFramebuffer(GL_FRAMEBUFFER, 0);    

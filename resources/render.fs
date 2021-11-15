@@ -28,12 +28,14 @@ struct PointLight {
 in vec2 tex_coord_0;
 in vec3 normal_0;
 in vec4 world_position_0;
+in vec4 lightspace_position_0;
 out vec4 frag_color;
 
 uniform DirectionalLight gLight;
 uniform PointLight gPointLight[8];
 uniform int gPointLightCount;
 
+uniform sampler2D gShadowMap;
 uniform sampler2D gSampler;
 uniform vec3 gCameraPos;
 
@@ -54,11 +56,25 @@ float get_specular_component(Light light, vec3 direction) {
     return specular_intensity;
 }
 
+float get_visibility() {
+    vec3 proj_coords = lightspace_position_0.xyz / lightspace_position_0.w;
+    vec2 uv_coords;
+    uv_coords.x = 0.5 * proj_coords.x + 0.5;
+    uv_coords.y = 0.5 * proj_coords.y + 0.5;
+    float z = 0.5 * proj_coords.z + 0.5;
+    float depth = texture(gShadowMap, uv_coords).x;
+    if (depth < (z + 0.00001)) {
+        return 0.5;
+    } else {
+        return 1.0;
+    }       
+}
+
 vec4 get_light(Light light, vec3 direction) {
     float diffuse_intensity = get_diffuse_component(light, direction);
     float specular_intensity = get_specular_component(light, direction);
 
-    float intensity = specular_intensity + diffuse_intensity + light.ambient_intensity;
+    float intensity = get_visibility() * (specular_intensity + diffuse_intensity) + light.ambient_intensity;
     return clamp(intensity, 0, 1) * vec4(light.color, 1);
 }
 
