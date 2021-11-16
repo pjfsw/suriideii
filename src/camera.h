@@ -35,6 +35,7 @@ void camera_look(Camera *camera, float dx, float dy);
 
 void camera_transform_rebuild(Camera *camera);
 
+void camera_log(Camera *camera, char *prefix);
 
 #endif
 

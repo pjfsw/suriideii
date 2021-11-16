@@ -57,7 +57,7 @@ float get_specular_component(Light light, vec3 direction) {
 }
 
 float get_visibility() {
-    vec3 proj_coords = lightspace_position_0.xyz / lightspace_position_0.w;
+/*    vec3 proj_coords = lightspace_position_0.xyz / lightspace_position_0.w;
     vec2 uv_coords;
     uv_coords.x = 0.5 * proj_coords.x + 0.5;
     uv_coords.y = 0.5 * proj_coords.y + 0.5;
@@ -67,7 +67,10 @@ float get_visibility() {
         return 0.5;
     } else {
         return 1.0;
-    }       
+    } */
+    vec3 pos = lightspace_position_0.xyz * 0.5 + 0.5;
+    float depth = texture(gShadowMap, pos.xy).r;
+    return depth < (pos.z + 0.00001) ? 0.5 : 1.0;
 }
 
 vec4 get_light(Light light, vec3 direction) {

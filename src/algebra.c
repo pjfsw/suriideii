@@ -210,11 +210,12 @@ void matrix4f_perspective(Matrix4f *m, float fov, float ar, float a, float b) {
 void matrix4f_ortho(Matrix4f *m, float left, float right, float bottom, float top, float z_near, float z_far) {
     memset(m->m, 0, sizeof(float)*16);
     m->m[0][0] = 2.0f / (right - left);
+    m->m[0][3] = -(right + left) / (right - left);    
     m->m[1][1] = 2.0f / (top - bottom);
-    m->m[2][2] = - 2.0f / (z_far - z_near);
-    m->m[3][0] = - (right + left) / (right - left);
-    m->m[3][1] = - (top + bottom) / (top - bottom);
-    m->m[3][2] = - (z_far + z_near) / (z_far - z_near);    
+    m->m[1][3] = -(top + bottom) / (top - bottom);
+    m->m[2][2] = -2.0f / (z_far - z_near);
+    m->m[2][3] = -(z_far + z_near) / (z_far - z_near);
+    m->m[3][3] = 1;
 }
 
 

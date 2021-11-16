@@ -117,7 +117,9 @@ void update_window_size() {
     matrix4f_perspective(&gui.perspective, fov, ar, app.perspective_a, app.perspective_b);
     glUniformMatrix4fv(gui.render_vars.perspective, 1, GL_TRUE, &gui.perspective.m[0][0]);
 
-    matrix4f_ortho(&gui.light_projection, -50, 50, -50, 50, app.near_z, app.far_z);
+    //matrix4f_perspective(&gui.light_projection, fov, ar, app.perspective_a, app.perspective_b);
+    matrix4f_ortho(&gui.light_projection, -30, 30, -30, 30, -30, 30);
+
 }
 
 bool create_gui() {
@@ -223,16 +225,24 @@ bool create_gui() {
 }
 
 void init_lights() {
-    lighting_set_default_reflection(app.lighting, 0.52, 0.4, 0.3, 32);
+    lighting_set_default_reflection(app.lighting, 0.2, 0.7, 0.3, 32);
 
     Camera camera;
     camera_reset(&camera);
-    camera_look(&camera, M_PI/4, M_PI/4);
-    camera_move_unrestrained(&camera, -30);
+    camera_look(&camera, M_PI/2, 0);
+    camera_move_unrestrained(&camera, 20);
     camera_transform_rebuild(&camera);
+    camera_log(&camera, "Light camera: ");
     memcpy(&gui.light_view, &camera.m, sizeof(Matrix4f));
+    //memcpy(&app.camera, &camera, sizeof(Camera));
 
-    app.light = lighting_create_directional(app.lighting, camera.target.x, camera.target.y, camera.target.z, 1, 1, 1);
+    //vector3f_copy(&camera.position, &app.camera.position);
+    Vector3f direction;    
+    vector3f_multiply_scalar(-1, &camera.position, &direction);
+    vector3f_add(&camera.target, &direction);
+    vector3f_normalize(&direction);
+    printf("Light direction: (%f,%f,%f)\n", direction.x, direction.y, direction.z);
+    app.light = lighting_create_directional(app.lighting, direction.x, direction.y, direction.z, 1, 1, 1);
 }
 
 void create_vbos() {
@@ -416,7 +426,7 @@ void render_scene() {
     glUseProgram(gui.render_program);
     glUniformMatrix4fv(gui.render_vars.light_space, 1, GL_TRUE, &gui.light_view.m[0][0]);
     glUniformMatrix4fv(gui.render_vars.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
-    glUniformMatrix4fv(gui.render_vars.light_projection, 1, GL_TRUE, &gui.perspective.m[0][0]);
+    glUniformMatrix4fv(gui.render_vars.light_projection, 1, GL_TRUE, &gui.light_projection.m[0][0]);
     glUniform3f(gui.render_vars.camera_pos, app.camera.position.x, app.camera.position.y, app.camera.position.z);
     shadowmap_bind(gui.shadowmap, GL_TEXTURE1);
     glUniform1i(gui.render_vars.shadowmap, 1);
@@ -436,11 +446,8 @@ void render_shadows() {
 
     glClear(GL_DEPTH_BUFFER_BIT);
     glUniformMatrix4fv(gui.shadow_vars.camera, 1, GL_TRUE, &gui.light_view.m[0][0]);
-    glUniformMatrix4fv(gui.shadow_vars.projection, 1, GL_TRUE, &gui.perspective.m[0][0]);
+    glUniformMatrix4fv(gui.shadow_vars.projection, 1, GL_TRUE, &gui.light_projection.m[0][0]);
 
-    //glUniformMatrix4fv(gui.shadow_vars.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
-    //glUniformMatrix4fv(gui.shadow_vars.projection, 1, GL_TRUE, &gui.light_projection.m[0][0]);
-    
     render_objects(render_object_for_shadowmap);   
     glBindFramebuffer(GL_FRAMEBUFFER, 0);    
 }
@@ -548,6 +555,8 @@ bool handle_events() {
                 return false;
             } else if (e.key.keysym.scancode == SDL_SCANCODE_TAB) {
                 app.display_hud = !app.display_hud;
+            } else if (e.key.keysym.scancode == SDL_SCANCODE_RETURN) {
+                camera_log(&app.camera, "Main camera ");
             }
         }
 

@@ -24,4 +24,3 @@ void transform_reset(Transform *transform) {
 void transform_rebuild(Transform *transform) {
     _transform_build_matrix(transform);
 }
-

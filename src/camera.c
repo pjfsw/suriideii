@@ -142,3 +142,14 @@ void camera_transform_rebuild(Camera *camera) {
     matrix4f_translation(&translation, -camera->position.x, -camera->position.y, -camera->position.z);
     matrix4f_multiply_target(&rotation, &translation, &camera->m);
 }
+
+void camera_log(Camera *camera, char *prefix) {
+    printf("%s: angle h=%f v=%f\n", prefix, camera->angle_h, camera->angle_v);
+    printf("%s: position (%f,%f,%f)\n", prefix, camera->position.x, camera->position.y, camera->position.z);
+    printf("%s: target   (%f,%f,%f)\n", prefix, camera->target.x, camera->target.y, camera->target.z);
+    printf("%s: up       (%f,%f,%f)\n", prefix, camera->up.x, camera->up.y, camera->up.z);
+    for (int i = 0; i < 4; i++) {
+        printf("%s: m[%d]     (%f,%f,%f,%f)\n", prefix, i, camera->m.m[i][0],
+            camera->m.m[i][1], camera->m.m[i][2], camera->m.m[i][3]);
+    }
+}
