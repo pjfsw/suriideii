@@ -66,7 +66,7 @@ vec4 get_light(Light light, vec3 direction) {
     float diffuse_intensity = get_diffuse_component(light, direction);
     float specular_intensity = get_specular_component(light, direction);
 
-    float intensity = get_visibility() * (specular_intensity + diffuse_intensity) + light.ambient_intensity;
+    float intensity = specular_intensity + diffuse_intensity + light.ambient_intensity;
     return clamp(intensity, 0, 1) * vec4(light.color, 1);
 }
 
@@ -95,6 +95,8 @@ void main() {
 	float distance = abs(distance(gCameraPos, world_position_0.xyz));
 	float opacity = clamp((distance-50) / 10, 0, 1);
 
-    frag_color = total_light * vec4(1,1,1,1-opacity) * vec4(texture2D(gSampler, tex_coord_0).xyz, 1);
+    float visibility = get_visibility();
+
+    frag_color = clamp(visibility * total_light, 0, 1) * vec4(1,1,1,1-opacity) * vec4(texture2D(gSampler, tex_coord_0).xyz, 1);
 }
 
