@@ -14,6 +14,8 @@ typedef struct _Lighting Lighting;
 
 Lighting *lighting_create(GLuint shader_program);
 
+void lighting_set_shadow_strength(Lighting *lighting, float strength);
+
 void lighting_set_default_reflection(Lighting *lighting, float ambient, float diffuse, float specular, float specular_power);
 
 void lighting_set_default_attenuation(Lighting *lighting, float constant, float linear, float exponential);

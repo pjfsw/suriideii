@@ -38,6 +38,7 @@ uniform int gPointLightCount;
 uniform sampler2D gShadowMap;
 uniform sampler2D gSampler;
 uniform vec3 gCameraPos;
+uniform float gShadowStrength;
 
 float get_diffuse_component(Light light, vec3 direction) {
     float diffuse_factor = dot(normalize(normal_0), -direction); 
@@ -59,7 +60,7 @@ float get_specular_component(Light light, vec3 direction) {
 float get_visibility() {
     vec3 pos = lightspace_position_0.xyz * 0.5 + 0.5;
     float depth = texture(gShadowMap, pos.xy).r;
-    return depth < (pos.z - 0.01) ? 0.5 : 1.0;
+    return depth < (pos.z - 0.01) ? gShadowStrength : 1.0;
 }
 
 vec4 get_light(Light light, vec3 direction) {

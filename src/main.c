@@ -225,14 +225,15 @@ bool create_gui() {
 }
 
 void init_lights() {
-    lighting_set_default_reflection(app.lighting, 0.4, 0.6, 0.3, 32);
-    lighting_set_default_attenuation(app.lighting, 0.1, 0.03, 0.0001);
-
+    lighting_set_default_reflection(app.lighting, 0.5, 0.6, 0.3, 32);
     app.light = lighting_create_directional(app.lighting, 1, -1, 1, 1, 1, 1);
+    lighting_set_shadow_strength(app.lighting, 0.7);    
     light_view_matrix(app.light, &gui.light_view);
-    lighting_set_default_reflection(app.lighting, 0.0, 0.4, 0.2, 32);
-    lighting_create_point(app.lighting, -30, 15, 19, 1, 0, 0);
-    lighting_create_point(app.lighting, 40, 15, 19, 0, 0, 1);
+
+    //lighting_set_default_reflection(app.lighting, 0.0, 0.4, 0.2, 32);
+    //lighting_set_default_attenuation(app.lighting, 0.8, 0.0, 0);
+    //lighting_create_point(app.lighting, -30, 15, 19, 1, 0, 0);
+    //lighting_create_point(app.lighting, 40, 15, 19, 0, 0, 1);
 }
 
 void create_vbos() {

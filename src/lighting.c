@@ -45,6 +45,7 @@ struct _Lighting {
     Attenuation default_attenuation;
     GLuint shader_program;
     GLint shader_point_light_count;
+    GLint shadow_strength;
     LightingDirectionalLight directional_light;
     LightingPointLight point_lights[NUMBER_OF_POINT_LIGHTS];
     int point_light_count;
@@ -164,7 +165,8 @@ bool _lighting_init_shader_point_light(GLuint program, char *prefix, ShaderPoint
 Lighting *lighting_create(GLuint shader_program) {
     Lighting *lighting = calloc(1, sizeof(Lighting));
     lighting->shader_program = shader_program;
-    if (!uniform_assign(lighting->shader_program, &lighting->shader_point_light_count, "gPointLightCount")) {
+    if (!uniform_assign(lighting->shader_program, &lighting->shader_point_light_count, "gPointLightCount") ||
+        !uniform_assign(lighting->shader_program, &lighting->shadow_strength, "gShadowStrength")) {
         return false;
     }
     lighting_set_default_reflection(lighting, 0.45, 0.3, 0.2, 32);
@@ -172,6 +174,12 @@ Lighting *lighting_create(GLuint shader_program) {
 
     return lighting;
 }
+
+void lighting_set_shadow_strength(Lighting *lighting, float strength) {
+    glUseProgram(lighting->shader_program);
+    glUniform1f(lighting->shadow_strength, strength);
+}
+
 
 void lighting_set_default_reflection(Lighting *lighting, float ambient, float diffuse, float specular, float specular_power) {
     lighting->default_reflection.ambient_intensity = ambient;
