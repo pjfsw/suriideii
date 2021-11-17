@@ -28,6 +28,7 @@ add_executable(suriideii
     src/object.c
     src/shadowmap.c
     src/lighting.c
+    src/light.c
     src/uniform.c
 )
 

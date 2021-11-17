@@ -58,10 +58,17 @@ Vector3f *vector3f_copy(Vector3f *src, Vector3f *target);
 Vector3f *vector3f_add(Vector3f *src, Vector3f *target);
 
 // Returns target
+Vector3f *vector3f_sub(Vector3f *lhs, Vector3f *rhs, Vector3f *target);
+
+// Returns target
 Vector3f *vector3f_cross(Vector3f *lhs, Vector3f *rhs, Vector3f *target);
+
+float vector3f_dot(Vector3f *lhs, Vector3f *rhs);
 
 // Returns target
 Vector3f *vector3f_multiply_scalar(float scalar, Vector3f *src, Vector3f *target);
+
+Vector3f *vector3f_scale(float scalar, Vector3f *to_scale);
 
 char *vector3f_to_string(Vector3f *v, char *output);
 

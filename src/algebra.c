@@ -100,6 +100,14 @@ Vector3f *vector3f_add(Vector3f *src, Vector3f *target) {
     return target;
 }
 
+Vector3f *vector3f_sub(Vector3f *lhs, Vector3f *rhs, Vector3f *target) {
+    target->x = lhs->x - rhs->x;
+    target->y = lhs->y - rhs->y;
+    target->z = lhs->z - rhs->z;
+    return target;
+}
+
+
 Vector3f *vector3f_cross(Vector3f *lhs, Vector3f *rhs, Vector3f *target) {
     target->x = lhs->y * rhs->z - lhs->z * rhs->y;
     target->y = lhs->z * rhs->x - lhs->x * rhs->z;
@@ -107,11 +115,22 @@ Vector3f *vector3f_cross(Vector3f *lhs, Vector3f *rhs, Vector3f *target) {
     return target;
 }
 
+float vector3f_dot(Vector3f *lhs, Vector3f *rhs) {
+    return lhs->x * rhs->x + lhs->y * rhs->y + lhs->z * rhs->z;
+}
+
 Vector3f *vector3f_multiply_scalar(float scalar, Vector3f *src, Vector3f *target) {
     target->x = scalar * src->x;
     target->y = scalar * src->y;
     target->z = scalar * src->z;
     return target;
+}
+
+Vector3f *vector3f_scale(float scalar, Vector3f *to_scale) {
+    to_scale->x *= scalar;
+    to_scale->y *= scalar;
+    to_scale->z *= scalar;
+    return to_scale;
 }
 
 bool _algebra_float_equals(float a, float b) {

@@ -225,24 +225,14 @@ bool create_gui() {
 }
 
 void init_lights() {
-    lighting_set_default_reflection(app.lighting, 0.2, 0.7, 0.3, 32);
+    lighting_set_default_reflection(app.lighting, 0.5, 0.6, 0.3, 32);
+    lighting_set_default_attenuation(app.lighting, 0.01, 0.05, 0.001);
 
-    Camera camera;
-    camera_reset(&camera);
-    camera_look(&camera, M_PI/2, 0);
-    camera_move_unrestrained(&camera, 20);
-    camera_transform_rebuild(&camera);
-    camera_log(&camera, "Light camera: ");
-    memcpy(&gui.light_view, &camera.m, sizeof(Matrix4f));
-    //memcpy(&app.camera, &camera, sizeof(Camera));
-
-    //vector3f_copy(&camera.position, &app.camera.position);
-    Vector3f direction;    
-    vector3f_multiply_scalar(-1, &camera.position, &direction);
-    vector3f_add(&camera.target, &direction);
-    vector3f_normalize(&direction);
-    printf("Light direction: (%f,%f,%f)\n", direction.x, direction.y, direction.z);
-    app.light = lighting_create_directional(app.lighting, direction.x, direction.y, direction.z, 1, 1, 1);
+    app.light = lighting_create_directional(app.lighting, 1, -0.7, 1, 1, 1, 1);
+    light_view_matrix(app.light, &gui.light_view);
+//    lighting_set_default_reflection(app.lighting, 0.0, 0.3, 0.3, 32);
+//    lighting_create_point(app.lighting, -10, 10, 15, 1, 0, 0);
+//    lighting_create_point(app.lighting, 20, 10, 25, 0, 0, 1);
 }
 
 void create_vbos() {
@@ -426,6 +416,7 @@ void render_scene() {
     glUseProgram(gui.render_program);
     glUniformMatrix4fv(gui.render_vars.light_space, 1, GL_TRUE, &gui.light_view.m[0][0]);
     glUniformMatrix4fv(gui.render_vars.camera, 1, GL_TRUE, &app.camera.m.m[0][0]);
+    //glUniformMatrix4fv(gui.render_vars.light_projection, 1, GL_TRUE, &gui.light_projection.m[0][0]);
     glUniformMatrix4fv(gui.render_vars.light_projection, 1, GL_TRUE, &gui.light_projection.m[0][0]);
     glUniform3f(gui.render_vars.camera_pos, app.camera.position.x, app.camera.position.y, app.camera.position.z);
     shadowmap_bind(gui.shadowmap, GL_TEXTURE1);
@@ -441,6 +432,7 @@ void render_debug() {
 }
 
 void render_shadows() {
+    //glCullFace(GL_FRONT);
     glUseProgram(gui.shadow_program);
     shadowmap_set_as_render_target(gui.shadowmap);
 
@@ -450,6 +442,7 @@ void render_shadows() {
 
     render_objects(render_object_for_shadowmap);   
     glBindFramebuffer(GL_FRAMEBUFFER, 0);    
+    //glCullFace(GL_BACK);
 }
 
 void render() {
