@@ -34,6 +34,7 @@ add_executable(suriideii
     src/shadow_shader.c
     src/render_shader.c
     src/hud_shader.c
+    src/tilemap.c
 )
 
 configure_file(resources/render.vs ./render.vs COPYONLY)

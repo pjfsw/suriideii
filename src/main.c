@@ -5,19 +5,14 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include "algebra.h"
 #include "camera.h"
 #include "mesh.h"
 #include "meshloader.h"
 #include "texture.h"
-#include "shader_program.h"
-#include "transform.h"
-#include "light.h"
-#include "lighting.h"
 #include "object.h"
-#include "uniform.h"
 #include "shadowmap.h"
 #include "renderer.h"
+#include "tilemap.h"
 
 #define REQ_MAJOR_VERSION 4
 #define REQ_MINOR_VERSION 2
@@ -59,16 +54,16 @@ void create_vbos(Mesh **meshes, int mesh_count) {
     return obj;
 }*/
 
-void update_objects(Object **objects, int count, float delta_time) {
-    int x = -count/2;
+/*void update_objects(Object **objects, int count, float delta_time) {
+    int x = 0;
     for (int i = 0; i < count; i++) {
         Object *object = objects[i];
         if (object == NULL) {
             continue;
         }
-        object->transform.position.x = (x++) * 3;
+        object->transform.position.x = (((x++) & 7) * 3);
         object->transform.position.y = 0;
-        object->transform.position.z = 5;
+        object->transform.position.z = 5 * (i >> 3);
         object->transform.rotation.z = 0;
 
         if (object->type == OBJECT_TYPE_SKULL) {
@@ -83,6 +78,23 @@ void update_objects(Object **objects, int count, float delta_time) {
             object->transform.rotation.x = 0;
         }
         transform_rebuild(&object->transform);
+    }
+}*/
+
+void tiles_to_objects(Tilemap *tilemap, Object **objects, int rows, int cols) {
+    int i = 0;
+    for (int row = 0; row < rows; row++) {
+        for (int col = 0; col < cols; col++) {
+            int tile = tilemap_get_tile_at(tilemap, row, col);
+            if (objects[i] != NULL) {
+                Transform *transform = &objects[i++]->transform;
+                transform->scale = 1;
+                transform->position.x = col*2;
+                transform->position.y = tile;
+                transform->position.z = row*2;
+                transform_rebuild(transform);
+            }
+        }
     }
 }
 
@@ -194,6 +206,7 @@ int main(int argc, char **argv) {
     if (renderer == NULL) {
         return 1;
     }
+    Tilemap *tilemap = tilemap_create();
 
     AppTime app_time;
     Camera camera;
@@ -201,30 +214,18 @@ int main(int argc, char **argv) {
     memset(&movement, 0, sizeof(Movement));
     camera_reset(&camera);
 
-    Mesh *skull_mesh = mesh_loader_load("skull.obj");
-    mesh_instantiate(skull_mesh);
     Mesh *cube_mesh = mesh_cube();
     mesh_instantiate(cube_mesh);
-    Texture *skull_texture = texture_create("skull.jpg");
     Texture *cube_texture = texture_create("texture.jpg");
-    int number_of_cubes = 32;
-    int number_of_skulls = 4;
-    int number_of_objects = number_of_cubes + number_of_skulls;
+    int rows = 10;
+    int cols = 10;
+    int number_of_objects = rows*cols;
     Object *objects[number_of_objects];
-    int n=0;
-    for (int i = 0; i < number_of_cubes; i++) {
-        objects[n] = object_create(cube_mesh, cube_texture, OBJECT_TYPE_STATIC);
-        if (objects[n] == NULL) {
-            printf("Cube is null\n");
+    for (int i = 0; i < number_of_objects; i++) {
+        objects[i] = object_create(cube_mesh, cube_texture, OBJECT_TYPE_STATIC);
+        if (objects[i] == NULL) {
+            printf("Cube %d is null\n", i);
         }
-        n++;
-    }
-    for (int i = 0; i < number_of_skulls; i++) {
-        objects[n] = object_create(skull_mesh, skull_texture, OBJECT_TYPE_SKULL);
-        if (objects[n] == NULL) {
-            printf("Skull is null\n");
-        }
-        n++;
     }
 
     SDL_SetRelativeMouseMode(true);
@@ -232,7 +233,7 @@ int main(int argc, char **argv) {
 
     while (handle_events(&camera,&movement)) {        
         update_time(&app_time);
-        update_objects(objects, number_of_objects, app_time.delta_time);
+        tiles_to_objects(tilemap, objects, rows, cols);
         update_camera(&movement, &camera, app_time.delta_time);
         camera_transform_rebuild(&camera);
         renderer_set_camera(renderer, &camera.m, &camera.position);
@@ -245,8 +246,7 @@ int main(int argc, char **argv) {
     }
     texture_destroy(cube_texture);
     mesh_destroy(cube_mesh);
-    texture_destroy(skull_texture);
-    mesh_destroy(skull_mesh);
     renderer_destroy(renderer);
+    tilemap_destroy(tilemap);
     sdl_quit();
 }
