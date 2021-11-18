@@ -177,11 +177,40 @@ void mesh_instantiate(Mesh *mesh) {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->index_count*sizeof(int), mesh->indices, GL_STATIC_DRAW);
 }
 
+void mesh_render(Mesh *mesh) {
+    MeshGL *gl = &mesh->gl;
+
+    glBindBuffer(GL_ARRAY_BUFFER, gl->vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl->ibo);
+    glEnableClientState(GL_VERTEX_ARRAY);    
+
+    // Position
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
+    long size = sizeof(Vector3f);
+    
+    // Texture
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)size);
+    size += sizeof(Vector2f);
+
+    // Normal
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)size);
+
+    glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_INT, 0);
+    glDisableVertexAttribArray(0);    
+    glDisableVertexAttribArray(1);    
+    glDisableClientState(GL_VERTEX_ARRAY);
+}
+
 void mesh_destroy(Mesh *mesh) {
     if (mesh == NULL) {
         return;
     }
     glDeleteBuffers(1, &mesh->gl.vbo);
+    glDeleteBuffers(1, &mesh->gl.ibo);
+    glDeleteVertexArrays(1, &mesh->gl.vao);
     if (mesh->indices != NULL) {
         free(mesh->indices);
     }

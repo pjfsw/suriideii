@@ -9,9 +9,10 @@ typedef struct {
     Mesh *mesh;
     Texture *texture;
     Transform transform;
+    int type;
 } Object;
 
-Object *object_create(Mesh *mesh, Texture *texture);
+Object *object_create(Mesh *mesh, Texture *texture, int type);
 
 void object_destroy(Object *object);
 

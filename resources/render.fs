@@ -63,23 +63,23 @@ float get_visibility() {
     return depth < (pos.z - 0.01) ? gShadowStrength : 1.0;
 }
 
-vec4 get_light(Light light, vec3 direction) {
+vec4 get_light(Light light, vec3 direction, float visibility) {
     float diffuse_intensity = get_diffuse_component(light, direction);
     float specular_intensity = get_specular_component(light, direction);
 
-    float intensity = specular_intensity + diffuse_intensity + light.ambient_intensity;
+    float intensity = visibility * (specular_intensity + diffuse_intensity) + light.ambient_intensity;
     return clamp(intensity, 0, 1) * vec4(light.color, 1);
 }
 
-vec4 get_directional_light(DirectionalLight light) {
-    return get_light(light.light, light.direction);
+vec4 get_directional_light(DirectionalLight light, float visibility) {
+    return get_light(light.light, light.direction, visibility);
 }
 
 vec4 get_point_light(PointLight light) {
     vec3 direction = (world_position_0 - vec4(light.position, 1)).xyz;
     float distance = length(direction);
     direction = normalize(direction);    
-    vec4 color = get_light(light.light, direction);
+    vec4 color = get_light(light.light, direction, 1.0);
     float attenuation = 
         light.attenuation.constant +
         light.attenuation.linear * distance +
@@ -88,15 +88,15 @@ vec4 get_point_light(PointLight light) {
 }
 
 void main() {
-    vec4 total_light = get_directional_light(gLight);
+    float visibility = get_visibility();
+
+    vec4 total_light = get_directional_light(gLight, visibility);
     for (int i = 0; i < gPointLightCount; i++) {
         total_light += get_point_light(gPointLight[i]);
     }
 
 	float distance = abs(distance(gCameraPos, world_position_0.xyz));
 	float opacity = clamp((distance-50) / 10, 0, 1);
-
-    float visibility = get_visibility();
 
     frag_color = clamp(visibility * total_light, 0, 1) * vec4(1,1,1,1-opacity) * vec4(texture2D(gSampler, tex_coord_0).xyz, 1);
 }

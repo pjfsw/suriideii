@@ -30,6 +30,10 @@ add_executable(suriideii
     src/lighting.c
     src/light.c
     src/uniform.c
+    src/renderer.c
+    src/shadow_shader.c
+    src/render_shader.c
+    src/hud_shader.c
 )
 
 configure_file(resources/render.vs ./render.vs COPYONLY)
