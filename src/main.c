@@ -207,8 +207,8 @@ int main(int argc, char **argv) {
     mesh_instantiate(cube_mesh);
     Texture *skull_texture = texture_create("skull.jpg");
     Texture *cube_texture = texture_create("texture.jpg");
-    int number_of_cubes = 2;
-    int number_of_skulls = 2;
+    int number_of_cubes = 32;
+    int number_of_skulls = 4;
     int number_of_objects = number_of_cubes + number_of_skulls;
     Object *objects[number_of_objects];
     int n=0;

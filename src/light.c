@@ -1,13 +1,15 @@
 #include "algebra.h"
 #include "light.h"
 
-void light_view_matrix(DirectionalLight *light, Matrix4f *m) {
+void light_view_matrix(DirectionalLight *light, Vector3f *camera_pos, Matrix4f *m) {
     Vector3f eye;
     Vector3f at;
     Vector3f up; // sweat
-    vector3f_copy(&light->direction, &eye);
-    vector3f_scale(-1, &eye);
-    vector3f_multiply_scalar(-30, &eye, &at);
+    vector3f_copy(camera_pos, &at);
+    Vector3f dir;
+    vector3f_copy(&light->direction, &dir);
+    vector3f_scale(10, &dir);
+    vector3f_sub(&at, &dir, &eye);
 
     // TODO
     vector3f_set(&up, 0,0,1);

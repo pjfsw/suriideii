@@ -4,6 +4,7 @@
 #include <SDL2/SDL_image.h>
 
 #include "hud_shader.h"
+#include "light.h"
 #include "mesh.h"
 #include "renderer.h"
 #include "render_shader.h"
@@ -26,6 +27,7 @@ struct _Renderer {
     HudShader *hud_shader;
     RendererWindow *renderer_window;
     Shadowmap *shadowmap;
+    DirectionalLight *light;
 };
 
 void _renderer_destroy_window(RendererWindow *window) {
@@ -135,13 +137,8 @@ void _renderer_update_transforms(Renderer *renderer, double fov) {
 void _renderer_create_lights(Renderer *renderer) {
     Lighting *lighting = render_shader_get_lighting(renderer->render_shader);
     lighting_set_default_reflection(lighting, 0.6, 0.6, 0.3, 32);
-    DirectionalLight *light = lighting_create_directional(lighting, 1, -1, 1, 1, 1, 1);
-    lighting_set_shadow_strength(lighting, 0.5); 
-    Matrix4f light_view;
-    light_view_matrix(light, &light_view);
-    render_shader_set_light_view(renderer->render_shader, &light_view);
-    shadow_shader_set_camera(renderer->shadow_shader, &light_view);
-    // TODO dynamic positioning of lighting      
+    renderer->light = lighting_create_directional(lighting, 1, -1, 1, 1, 1, 1);
+    lighting_set_shadow_strength(lighting, 0.8); 
 }
 
 Renderer *renderer_create(double fov) {
@@ -211,4 +208,8 @@ void renderer_draw(Renderer *renderer, Object **objects, int object_count) {
 
 void renderer_set_camera(Renderer *renderer, Matrix4f *camera, Vector3f *camera_pos) {
     render_shader_set_camera(renderer->render_shader, camera, camera_pos);
+    Matrix4f light_view;
+    light_view_matrix(renderer->light, camera_pos, &light_view);
+    render_shader_set_light_view(renderer->render_shader, &light_view);
+    shadow_shader_set_camera(renderer->shadow_shader, &light_view);
 }

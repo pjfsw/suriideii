@@ -32,7 +32,7 @@ typedef struct {
     Attenuation attenuation;
 } PointLight;
 
-void light_view_matrix(DirectionalLight *light, Matrix4f *m);
+void light_view_matrix(DirectionalLight *light, Vector3f *camera_pos, Matrix4f *m);
 
 
 #endif
