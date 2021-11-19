@@ -24,11 +24,11 @@ void camera_set(Camera *camera, Vector3f *position, Vector3f *target, Vector3f *
 void camera_move_unrestrained(Camera *camera, double delta);
 
 // Move along the ground
-void camera_move(Camera *camera, bool backward, double delta_time);
+void camera_move(Camera *camera, bool backward, double delta, Vector3f *new_pos);
 
-void camera_move_left(Camera *camera, double delta_time);
+void camera_move_left(Camera *camera, double delta, Vector3f *new_pos);
 
-void camera_move_right(Camera *camera, double delta_time);
+void camera_move_right(Camera *camera, double delta, Vector3f *new_poss);
 
 // Normalized screen coordinates
 void camera_look(Camera *camera, float dx, float dy);

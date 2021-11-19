@@ -47,42 +47,29 @@ void camera_reset(Camera *camera) {
     camera_transform_rebuild(camera);
 }
 
-float _camera_get_movement(double delta_time) {
-    return 10.0 * delta_time;
-}
-
 void camera_move_unrestrained(Camera *camera, double delta) {
     Vector3f temp;
     vector3f_add(vector3f_multiply_scalar(delta, &camera->target, &temp),
         &camera->position);
 }
 
-void camera_move(Camera *camera, bool backward, double delta_time) {
-    double move = _camera_get_movement(delta_time);
+void camera_move(Camera *camera, bool backward, double move, Vector3f *movement) {
     if (backward) {
         move = -1.0 * move;
     }
-    Vector3f temp;
-    vector3f_add(vector3f_multiply_scalar(move, &camera->flat_target, &temp),
-        &camera->position);
+    vector3f_multiply_scalar(move, &camera->flat_target, movement);
 }
 
-void camera_move_left(Camera *camera, double delta_time) {
-    double move = _camera_get_movement(delta_time);
-    Vector3f left;
-    vector3f_cross(&camera->flat_target, &camera->flat_up, &left);
-    vector3f_normalize(&left);
-    vector3f_multiply_scalar(move, &left, &left); 
-    vector3f_add(&left, &camera->position);
+void camera_move_left(Camera *camera, double move, Vector3f *movement) {
+    vector3f_cross(&camera->flat_target, &camera->flat_up, movement);
+    vector3f_normalize(movement);
+    vector3f_multiply_scalar(move, movement, movement); 
 }
 
-void camera_move_right(Camera *camera, double delta_time) {
-    double move = _camera_get_movement(delta_time);
-    Vector3f right;
-    vector3f_cross(&camera->flat_up, &camera->target, &right);
-    vector3f_normalize(&right);
-    vector3f_multiply_scalar(move, &right, &right); 
-    vector3f_add(&right, &camera->position);
+void camera_move_right(Camera *camera, double move, Vector3f *movement) {
+    vector3f_cross(&camera->flat_up, &camera->target, movement);
+    vector3f_normalize(movement);
+    vector3f_multiply_scalar(move, movement, movement); 
 }
 
 // Normalized screen coordinates
