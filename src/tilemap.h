@@ -1,7 +1,11 @@
 #ifndef _TILEMAP_H
 #define _TILEMAP_H
 
-typedef struct _Tilemap Tilemap;
+typedef struct {
+    int rows;
+    int cols;
+    int **tiles;
+} Tilemap;
 
 Tilemap *tilemap_create();
 

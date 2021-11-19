@@ -136,9 +136,9 @@ void _renderer_update_transforms(Renderer *renderer, double fov) {
 
 void _renderer_create_lights(Renderer *renderer) {
     Lighting *lighting = render_shader_get_lighting(renderer->render_shader);
-    lighting_set_default_reflection(lighting, 0.6, 0.6, 0.3, 32);
+    lighting_set_default_reflection(lighting, 0.7, 0.3, 0.3, 32);
     renderer->light = lighting_create_directional(lighting, 1, -1, 1, 1, 1, 1);
-    lighting_set_shadow_strength(lighting, 0.8); 
+    lighting_set_shadow_strength(lighting, 0.99); 
 }
 
 Renderer *renderer_create(double fov) {
@@ -180,8 +180,10 @@ void _renderer_create_shadows(Renderer *renderer, Object **objects, int object_c
     glClear(GL_DEPTH_BUFFER_BIT);
     for (int i = 0; i < object_count; i++) {
         Object *object = objects[i];
-        shadow_shader_set_world(renderer->shadow_shader, &object->transform.m);
-        mesh_render(object->mesh);
+        if (object != NULL) {
+            shadow_shader_set_world(renderer->shadow_shader, &object->transform.m);
+            mesh_render(object->mesh);
+        }
     }
 }
 
@@ -196,7 +198,9 @@ void _renderer_render_scene(Renderer *renderer, Object **objects, int object_cou
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for (int i = 0; i < object_count; i++) {
-        _renderer_render_object(renderer, objects[i]);
+        if (objects[i] != NULL) {
+            _renderer_render_object(renderer, objects[i]);
+        }
     }
 }
 

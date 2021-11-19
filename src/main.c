@@ -54,45 +54,26 @@ void create_vbos(Mesh **meshes, int mesh_count) {
     return obj;
 }*/
 
-/*void update_objects(Object **objects, int count, float delta_time) {
-    int x = 0;
-    for (int i = 0; i < count; i++) {
-        Object *object = objects[i];
-        if (object == NULL) {
-            continue;
-        }
-        object->transform.position.x = (((x++) & 7) * 3);
-        object->transform.position.y = 0;
-        object->transform.position.z = 5 * (i >> 3);
-        object->transform.rotation.z = 0;
-
-        if (object->type == OBJECT_TYPE_SKULL) {
-            object->transform.scale = 0.1;
-            object->transform.rotation.x = 0.5 * -M_PI;
-            object->transform.rotation.y += delta_time;
-            if (object->transform.rotation.y > 2 * M_PI) {
-                object->transform.rotation.y -= 2 * M_PI;
-            }
-        } else {
-            object->transform.scale = 1;
-            object->transform.rotation.x = 0;
-        }
-        transform_rebuild(&object->transform);
-    }
-}*/
-
-void tiles_to_objects(Tilemap *tilemap, Object **objects, int rows, int cols) {
-    int i = 0;
-    for (int row = 0; row < rows; row++) {
-        for (int col = 0; col < cols; col++) {
-            int tile = tilemap_get_tile_at(tilemap, row, col);
-            if (objects[i] != NULL) {
-                Transform *transform = &objects[i++]->transform;
-                transform->scale = 1;
-                transform->position.x = col*2;
-                transform->position.y = tile;
-                transform->position.z = row*2;
-                transform_rebuild(transform);
+void tiles_to_objects(Tilemap *tilemap, Object **objects, int max_distance, int object_count, Camera *camera) {
+    int object = 0;
+    Vector3f center;
+    vector3f_set(&center, camera->position.x/2.0, 0, camera->position.z/2.0);  
+    Vector3f tile_pos;
+    Vector3f diff;
+    for (int row = 0; row < tilemap->rows; row++) {
+        for (int col = 0; col < tilemap->cols; col++) {
+            vector3f_set(&tile_pos, col, 0, row);
+            vector3f_sub(&tile_pos, &center, &diff);
+            if (vector3f_length(&diff) < max_distance) {                
+                int tile = tilemap_get_tile_at(tilemap, row, col);
+                if (tile > 0 && object < object_count) {
+                    Transform *transform = &objects[object++]->transform;                
+                    transform->scale = 1;
+                    transform->position.x = col*2;
+                    transform->position.y = 0;
+                    transform->position.z = row*2;
+                    transform_rebuild(transform);
+                }
             }
         }
     }
@@ -217,9 +198,8 @@ int main(int argc, char **argv) {
     Mesh *cube_mesh = mesh_cube();
     mesh_instantiate(cube_mesh);
     Texture *cube_texture = texture_create("texture.jpg");
-    int rows = 10;
-    int cols = 10;
-    int number_of_objects = rows*cols;
+    int max_distance = 8;
+    int number_of_objects = max_distance*max_distance;
     Object *objects[number_of_objects];
     for (int i = 0; i < number_of_objects; i++) {
         objects[i] = object_create(cube_mesh, cube_texture, OBJECT_TYPE_STATIC);
@@ -233,7 +213,7 @@ int main(int argc, char **argv) {
 
     while (handle_events(&camera,&movement)) {        
         update_time(&app_time);
-        tiles_to_objects(tilemap, objects, rows, cols);
+        tiles_to_objects(tilemap, objects, max_distance, number_of_objects, &camera);
         update_camera(&movement, &camera, app_time.delta_time);
         camera_transform_rebuild(&camera);
         renderer_set_camera(renderer, &camera.m, &camera.position);
