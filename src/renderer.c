@@ -136,7 +136,7 @@ void _renderer_update_transforms(Renderer *renderer, double fov) {
 
 void _renderer_create_lights(Renderer *renderer) {
     Lighting *lighting = render_shader_get_lighting(renderer->render_shader);
-    lighting_set_default_reflection(lighting, 0.6, 0.4, 0.5, 32);
+    lighting_set_default_reflection(lighting, 0.7, 0.3, 0.5, 32);
     renderer->light = lighting_create_directional(lighting, 1, -0.8, 1, 1, 1, 1);
     lighting_set_shadow_strength(lighting, 0.75); 
 }
@@ -162,7 +162,7 @@ Renderer *renderer_create(double fov) {
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
     glBlendFunc(GL_SRC_ALPHA, GL_CONSTANT_ALPHA);    
-    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClearColor(0.2, 0.3, 0.5, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     return renderer;

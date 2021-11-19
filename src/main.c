@@ -179,6 +179,17 @@ void init_walls(ObjectPool *walls, float room_size, float room_height) {
     }
 }
 
+void init_cubes(ObjectPool *cubes, float room_height) {
+    (void)room_height;
+    for (int i = 0; i < cubes->object_count; i++) {
+        Transform *t = &cubes->objects[i]->transform;
+        vector3f_y(&t->rotation, M_PI/3);
+        vector3f_set(&t->position, 0, -room_height/4, 7);
+        t->scale = 1;
+        transform_rebuild(t);
+    }
+}
+
 int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
@@ -197,6 +208,7 @@ int main(int argc, char **argv) {
 
     Texture *floor_texture = texture_create("floor.png");
     Texture *wall_texture = texture_create("texture.jpg");
+    Texture *cube_texture = texture_create("texture.jpg");
 
     float room_size = 20;
     float room_height = 4;
@@ -207,11 +219,14 @@ int main(int argc, char **argv) {
     mesh_instantiate(floor_mesh);
     Mesh *wall_mesh = mesh_quad(-room_size/2.0,-room_height/2.0,room_size,room_height, room_size/4, room_height/4);
     mesh_instantiate(wall_mesh);
+    Mesh *cube_mesh = mesh_cube();
+    mesh_instantiate(cube_mesh);
 
     ObjectPool *floor_pool = object_pool_create(floor_mesh, floor_texture, 1, 0);
     ObjectPool *wall_pool = object_pool_create(wall_mesh, wall_texture, 4, 0);    
+    ObjectPool *cube_pool = object_pool_create(cube_mesh, cube_texture, 1, 1);
 
-    int object_count = wall_pool->object_count + floor_pool->object_count;
+    int object_count = wall_pool->object_count + floor_pool->object_count + cube_pool->object_count;
     Object **objects = calloc(object_count, sizeof(Object));
     int n = 0;
     for (int i = 0 ; i < floor_pool->object_count; i++) {
@@ -220,12 +235,18 @@ int main(int argc, char **argv) {
     for (int i = 0 ; i < wall_pool->object_count; i++) {
         objects[n++] = wall_pool->objects[i];                
     }
+    for (int i = 0; i < cube_pool->object_count; i++) {
+        objects[n++] = cube_pool->objects[i];
+    }
 
     init_floor(floor_pool, room_size, room_height);
     init_walls(wall_pool, room_size, room_height);
+    init_cubes(cube_pool, room_height);
 
     SDL_SetRelativeMouseMode(true);
     SDL_GL_SetSwapInterval(0);    
+
+    camera.position.z = -4;
 
     while (handle_events(&camera,&movement)) {        
         update_time(&app_time);
@@ -249,6 +270,7 @@ int main(int argc, char **argv) {
     free(objects);
     object_pool_destroy(wall_pool, true);
     object_pool_destroy(floor_pool, true);
+    object_pool_destroy(cube_pool, true);
     renderer_destroy(renderer);
     sdl_quit();
 }

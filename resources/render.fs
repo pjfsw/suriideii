@@ -60,7 +60,7 @@ float get_specular_component(Light light, vec3 direction) {
 float get_visibility() {
     vec3 pos = lightspace_position_0.xyz * 0.5 + 0.5;
     float depth = texture(gShadowMap, pos.xy).r;
-    return depth < (pos.z - 0.01) ? gShadowStrength : 1.0;
+    return depth < (pos.z - 0.0001) ? gShadowStrength : 1.0;
 }
 
 vec4 get_light(Light light, vec3 direction, float visibility) {
