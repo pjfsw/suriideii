@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 Mesh *mesh_cube() {
     Mesh *mesh = calloc(1, sizeof(Mesh));
@@ -124,39 +125,60 @@ Mesh *mesh_cube() {
     return mesh;
 }
 
-Mesh *mesh_quad() {
+Mesh *mesh_quad(double x_offset, double y_offset, double width, double height, int subdivisions) {
+    if (subdivisions < 1) {
+        fprintf(stderr, "Invalid number of subdivisions %d\n", subdivisions);
+        return NULL;
+    }
     Mesh *mesh = calloc(1, sizeof(Mesh));
-    mesh->vertex_count = 4;
+    mesh->vertex_count = 4 * subdivisions * subdivisions;
     mesh->vertices = calloc(mesh->vertex_count, sizeof(Vertex));
+
+    mesh->index_count = 6 * subdivisions * subdivisions;
+    mesh->indices = calloc(mesh->index_count, sizeof(int));
 
     Vertex vertices[mesh->vertex_count];
 
-    double size = 1.0;
-    // front
-    vector3f_set(&vertices[0].position, -size, size, 0);
-    vector2f_set(&vertices[0].texture, 0, 1);
-    vector3f_set(&vertices[1].position, size, size, 0);
-    vector2f_set(&vertices[1].texture, 1, 1);
-    vector3f_set(&vertices[2].position, size, -size, 0);
-    vector2f_set(&vertices[2].texture, 1, 0);
-    vector3f_set(&vertices[3].position, -size, -size, 0);
-    vector2f_set(&vertices[3].texture, 0, 0);
-    for (int i = 0; i < 4; i++) {
-        vector3f_set(&vertices[i].normal, 0,0,-1);
+    // TODO optimize vertex count and index count
+
+    double sub_width = width/(float)subdivisions;
+    double sub_height = height/(float)subdivisions;
+
+    // Create indices for a mesh
+    unsigned int indices[] = {0, 1, 2, 0, 2, 3};
+
+    int vertex_offset = 0;
+    int index_offset = 0;
+    for (int x = 0; x < subdivisions; x++) {
+        for (int y = 0; y < subdivisions; y++) {
+            double x1 = x_offset + (float)x * sub_width;
+            double y1 = y_offset + (float)y * sub_height;
+            double x2 = x1 + sub_width;
+            double y2 = y1 + sub_height;
+            printf("x1=%f\n", x1);
+            // front
+            vector3f_set(&vertices[vertex_offset].position, x1, y2, 0);
+            vector2f_set(&vertices[vertex_offset].texture, 0, 1);
+            vector3f_set(&vertices[vertex_offset+1].position, x2, y2, 0);
+            vector2f_set(&vertices[vertex_offset+1].texture, 1, 1);
+            vector3f_set(&vertices[vertex_offset+2].position, x2, y1, 0);
+            vector2f_set(&vertices[vertex_offset+2].texture, 1, 0);
+            vector3f_set(&vertices[vertex_offset+3].position, x1, y1, 0);
+            vector2f_set(&vertices[vertex_offset+3].texture, 0, 0);
+            for (int i = 0; i < 4; i++) {
+                vector3f_set(&vertices[vertex_offset+i].normal, 0,0,-1);
+            }
+            for (int i = 0; i < 6; i++) {
+                mesh->indices[index_offset++] = indices[i]+vertex_offset;
+            }
+            vertex_offset += 4;
+            
+        }
     }
-
-    memcpy(mesh->vertices, vertices, sizeof(Vertex)*mesh->vertex_count);
-
-    mesh->index_count = 6;
-    mesh->indices = calloc(mesh->index_count, sizeof(int));
-
-    // Create indices for a cube
-    unsigned int indices[] = {
-        0,1,2, // front
-        0,2,3
-    };
-
-    memcpy(mesh->indices, indices, sizeof(int)*mesh->index_count);
+    memcpy(mesh->vertices, vertices, sizeof(Vertex) * mesh->vertex_count);
+    for (int i = 0; i < mesh->vertex_count; i++) {
+        printf("Vertex %d = (%f,%f,%f)\n", i, mesh->vertices[i].position.x, mesh->vertices[i].position.y, mesh->vertices[i].position.z);
+    }
     return mesh;
 }
 
