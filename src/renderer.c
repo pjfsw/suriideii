@@ -136,9 +136,9 @@ void _renderer_update_transforms(Renderer *renderer, double fov) {
 
 void _renderer_create_lights(Renderer *renderer) {
     Lighting *lighting = render_shader_get_lighting(renderer->render_shader);
-    lighting_set_default_reflection(lighting, 0.7, 0.3, 0.5, 32);
-    renderer->light = lighting_create_directional(lighting, 1, -1, 1, 1, 1, 1);
-    lighting_set_shadow_strength(lighting, 0.99); 
+    lighting_set_default_reflection(lighting, 0.6, 0.4, 0.5, 32);
+    renderer->light = lighting_create_directional(lighting, 1, -0.8, 1, 1, 1, 1);
+    lighting_set_shadow_strength(lighting, 0.75); 
 }
 
 Renderer *renderer_create(double fov) {

@@ -28,7 +28,7 @@ typedef struct {
 
 Mesh *mesh_cube();
 
-Mesh *mesh_quad(double x_offset, double y_offset, double width, double height, int subdivisions);
+Mesh *mesh_quad(double x_offset, double y_offset, double width, double height, int x_subdivision, int y_subdivision);
 
 void mesh_instantiate(Mesh *mesh);
 

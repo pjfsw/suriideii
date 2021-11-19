@@ -96,7 +96,7 @@ void main() {
     }
 
 	float distance = abs(distance(gCameraPos, world_position_0.xyz));
-	float opacity = clamp((distance-4) / 10, 0, 1);
+	float opacity = clamp((distance-50) / 10, 0, 1);
 
     frag_color = clamp(visibility * total_light, 0, 1) * vec4(1,1,1,1-opacity) * vec4(texture2D(gSampler, tex_coord_0).xyz, 1);
 }

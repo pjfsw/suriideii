@@ -125,32 +125,32 @@ Mesh *mesh_cube() {
     return mesh;
 }
 
-Mesh *mesh_quad(double x_offset, double y_offset, double width, double height, int subdivisions) {
-    if (subdivisions < 1) {
-        fprintf(stderr, "Invalid number of subdivisions %d\n", subdivisions);
+Mesh *mesh_quad(double x_offset, double y_offset, double width, double height, int x_subdivision, int y_subdivision) {
+    if (x_subdivision < 1 || y_subdivision < 1) {
+        fprintf(stderr, "Invalid number of subdivisions %d %d\n", x_subdivision, y_subdivision);
         return NULL;
     }
     Mesh *mesh = calloc(1, sizeof(Mesh));
-    mesh->vertex_count = 4 * subdivisions * subdivisions;
+    mesh->vertex_count = 4 * x_subdivision * y_subdivision;
     mesh->vertices = calloc(mesh->vertex_count, sizeof(Vertex));
 
-    mesh->index_count = 6 * subdivisions * subdivisions;
+    mesh->index_count = 6 * x_subdivision * y_subdivision;
     mesh->indices = calloc(mesh->index_count, sizeof(int));
 
     Vertex vertices[mesh->vertex_count];
 
     // TODO optimize vertex count and index count
 
-    double sub_width = width/(float)subdivisions;
-    double sub_height = height/(float)subdivisions;
+    double sub_width = width/(float)x_subdivision;
+    double sub_height = height/(float)y_subdivision;
 
     // Create indices for a mesh
     unsigned int indices[] = {0, 1, 2, 0, 2, 3};
 
     int vertex_offset = 0;
     int index_offset = 0;
-    for (int x = 0; x < subdivisions; x++) {
-        for (int y = 0; y < subdivisions; y++) {
+    for (int x = 0; x < x_subdivision; x++) {
+        for (int y = 0; y < y_subdivision; y++) {
             double x1 = x_offset + (float)x * sub_width;
             double y1 = y_offset + (float)y * sub_height;
             double x2 = x1 + sub_width;

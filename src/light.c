@@ -8,7 +8,7 @@ void light_view_matrix(DirectionalLight *light, Vector3f *camera_pos, Matrix4f *
     vector3f_copy(camera_pos, &at);
     Vector3f dir;
     vector3f_copy(&light->direction, &dir);
-    vector3f_scale(10, &dir);
+    vector3f_scale(2, &dir);
     vector3f_sub(&at, &dir, &eye);
 
     // TODO

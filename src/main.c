@@ -13,7 +13,6 @@
 #include "object_pool.h"
 #include "shadowmap.h"
 #include "renderer.h"
-#include "tilemap.h"
 
 #define REQ_MAJOR_VERSION 4
 #define REQ_MINOR_VERSION 2
@@ -55,56 +54,6 @@ void create_vbos(Mesh **meshes, int mesh_count) {
     return obj;
 }*/
 
-void tiles_to_objects(Tilemap *tilemap, ObjectPool *cubes, int max_distance, Camera *camera) {
-    int object = 0;
-    Vector3f center;
-    vector3f_set(&center, camera->position.x/2.0, 0, camera->position.z/2.0);  
-    Vector3f tile_pos;
-    Vector3f diff;
-    for (int row = 0; row < tilemap->rows; row++) {
-        for (int col = 0; col < tilemap->cols; col++) {
-            vector3f_set(&tile_pos, col, 0, row);
-            vector3f_sub(&tile_pos, &center, &diff);
-            if (vector3f_length(&diff) < max_distance) {                
-                int tile = tilemap_get_tile_at(tilemap, row, col);
-                if (tile > 0 && object < cubes->object_count) {
-                    Transform *transform = &cubes->objects[object++]->transform;                
-                    transform->scale = 1;
-                    transform->position.x = col*2;
-                    transform->position.y = 0;
-                    transform->position.z = row*2;
-                    transform_rebuild(transform);
-                }
-            }
-        }
-    }
-}
-
-void floors_to_objects(Tilemap *tilemap, ObjectPool *floors, int max_distance, Camera *camera) {
-    int object = 0;
-    Vector3f center;
-    float scale = 8;
-    vector3f_set(&center, camera->position.x/scale, 0, camera->position.z/scale);  
-    Vector3f tile_pos;
-    Vector3f diff;
-    for (int row = 0; row < tilemap->rows; row++) {
-        for (int col = 0; col < tilemap->cols; col++) {
-            vector3f_set(&tile_pos, col, 0, row);
-            vector3f_sub(&tile_pos, &center, &diff);
-            if (vector3f_length(&diff) < max_distance) {                
-                if (object < floors->object_count) {
-                    Transform *transform = &floors->objects[object++]->transform;                
-                    transform->scale = scale;
-                    transform->rotation.x = M_PI/2;
-                    transform->position.x = col*scale;
-                    transform->position.y = -1;
-                    transform->position.z = row*scale;
-                    transform_rebuild(transform);
-                }
-            }
-        }
-    }
-}
 
 void update_camera(Movement *movement, Camera *camera, float delta_time) {
     if (movement->forward) {
@@ -204,6 +153,32 @@ void sdl_quit() {
     SDL_Quit();
 }
 
+void init_floor(ObjectPool *floor, float room_size, float room_height) {
+    (void)room_height;
+    (void)room_size;
+    for (int i = 0; i < floor->object_count; i++) {
+        Transform *t = &floor->objects[i]->transform;
+        vector3f_set(&t->position, 0, -room_height/2.0, 0);
+        vector3f_x(&t->rotation, M_PI/2);
+        t->scale = 1;
+        transform_rebuild(t);
+    }
+}
+
+void init_walls(ObjectPool *walls, float room_size, float room_height) {
+    (void)room_height;
+    float rotation[4] = {0,M_PI/2.0,M_PI,3.0*M_PI/2.0};
+    float x[4] = {0,room_size/2.0,0, -room_size/2.0};
+    float z[4] = {room_size/2.0,0,-room_size/2.0,0};
+    for (int i = 0; i < walls->object_count; i++) {
+        Transform *t = &walls->objects[i]->transform;
+        vector3f_y(&t->rotation, rotation[i]);        
+        vector3f_set(&t->position, x[i],0,z[i]);
+        t->scale = 1;
+        transform_rebuild(t);
+    }
+}
+
 int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
@@ -214,54 +189,66 @@ int main(int argc, char **argv) {
     if (renderer == NULL) {
         return 1;
     }
-    Tilemap *tilemap = tilemap_create();
-
     AppTime app_time;
     Camera camera;
     Movement movement;
     memset(&movement, 0, sizeof(Movement));
     camera_reset(&camera);
 
-    int max_distance = 8;
-    int floor_distance = 2;
-
     Texture *floor_texture = texture_create("floor.png");
-    Texture *cube_texture = texture_create("texture.jpg");
+    Texture *wall_texture = texture_create("texture.jpg");
 
-    Mesh *floor_mesh = mesh_quad(-0.5, -0.5, 1, 1, 4);
+    float room_size = 20;
+    float room_height = 4;
+    float room_min = -0.4 * room_size;
+    float room_max = 0.4 * room_size;
+
+    Mesh *floor_mesh = mesh_quad(-room_size/2.0, -room_size/2.0, room_size, room_size, room_size/2, room_size/2);
     mesh_instantiate(floor_mesh);
-    ObjectPool *floor_pool = object_pool_create(floor_mesh, floor_texture, max_distance * max_distance, 0);
+    Mesh *wall_mesh = mesh_quad(-room_size/2.0,-room_height/2.0,room_size,room_height, room_size/4, room_height/4);
+    mesh_instantiate(wall_mesh);
 
-    Mesh *cube_mesh = mesh_cube();
-    mesh_instantiate(cube_mesh);
-    ObjectPool *cube_pool = object_pool_create(cube_mesh, cube_texture, max_distance * max_distance, 0);    
+    ObjectPool *floor_pool = object_pool_create(floor_mesh, floor_texture, 1, 0);
+    ObjectPool *wall_pool = object_pool_create(wall_mesh, wall_texture, 4, 0);    
 
-    int object_count = cube_pool->object_count + floor_pool->object_count;
+    int object_count = wall_pool->object_count + floor_pool->object_count;
     Object **objects = calloc(object_count, sizeof(Object));
     int n = 0;
     for (int i = 0 ; i < floor_pool->object_count; i++) {
         objects[n++] = floor_pool->objects[i];                
     }
-    for (int i = 0 ; i < cube_pool->object_count; i++) {
-        objects[n++] = cube_pool->objects[i];                
+    for (int i = 0 ; i < wall_pool->object_count; i++) {
+        objects[n++] = wall_pool->objects[i];                
     }
-    
+
+    init_floor(floor_pool, room_size, room_height);
+    init_walls(wall_pool, room_size, room_height);
+
     SDL_SetRelativeMouseMode(true);
     SDL_GL_SetSwapInterval(0);    
 
     while (handle_events(&camera,&movement)) {        
         update_time(&app_time);
-        floors_to_objects(tilemap, floor_pool, floor_distance, &camera);
-        tiles_to_objects(tilemap, cube_pool, max_distance, &camera);
         update_camera(&movement, &camera, app_time.delta_time);
+        if (camera.position.x < room_min) {
+            camera.position.x = room_min;
+        }
+        if (camera.position.x > room_max) {
+            camera.position.x = room_max;
+        }
+        if (camera.position.z < room_min) {
+            camera.position.z = room_min;
+        }
+        if (camera.position.z > room_max) {
+            camera.position.z = room_max;
+        }
         camera_transform_rebuild(&camera);
         renderer_set_camera(renderer, &camera.m, &camera.position);
         renderer_draw(renderer, objects, object_count);
     }
     free(objects);
-    object_pool_destroy(cube_pool, true);
+    object_pool_destroy(wall_pool, true);
     object_pool_destroy(floor_pool, true);
     renderer_destroy(renderer);
-    tilemap_destroy(tilemap);
     sdl_quit();
 }
