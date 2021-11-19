@@ -106,20 +106,16 @@ void floors_to_objects(Tilemap *tilemap, ObjectPool *floors, int max_distance, C
     }
 }
 
-void check_movement(Movement *movement, Camera *camera, float delta_time, Vector3f *move_vector) {
-    double move = delta_time * 10.0;
-
-    vector3f_zero(move_vector);
-
+void update_camera(Movement *movement, Camera *camera, float delta_time) {
     if (movement->forward) {
-        camera_move(camera, false, move, move_vector);
+        camera_move(camera, false, delta_time);
     } else if (movement->backward) {
-        camera_move(camera, true, move, move_vector);
+        camera_move(camera, true, delta_time);
     }
     if (movement->left) {
-        camera_move_left(camera, move, move_vector);
+        camera_move_left(camera, delta_time);
     } else if (movement->right) {
-        camera_move_right(camera, move, move_vector);
+        camera_move_right(camera, delta_time);
     }
 }
 
@@ -253,14 +249,11 @@ int main(int argc, char **argv) {
     SDL_SetRelativeMouseMode(true);
     SDL_GL_SetSwapInterval(0);    
 
-    camera.position.z = 1;
     while (handle_events(&camera,&movement)) {        
         update_time(&app_time);
         floors_to_objects(tilemap, floor_pool, floor_distance, &camera);
         tiles_to_objects(tilemap, cube_pool, max_distance, &camera);
-        Vector3f move_vector;
-        check_movement(&movement, &camera, app_time.delta_time, &move_vector);
-        vector3f_add(&move_vector, &camera.position);
+        update_camera(&movement, &camera, app_time.delta_time);
         camera_transform_rebuild(&camera);
         renderer_set_camera(renderer, &camera.m, &camera.position);
         renderer_draw(renderer, objects, object_count);
