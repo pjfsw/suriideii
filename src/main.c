@@ -203,7 +203,7 @@ void check_collision(Geometry *geometry, Object **objects, int object_count, Vec
     float max_length = movement_length;
     for (int i = 0; i < object_count; i++) {
         if (objects[i] != NULL) {
-            float dist = physics_object_distance(
+            float dist = physics_object_distance2(
                 &objects[i]->geometry.transform.position, &objects[i]->geometry.collider,
                 &new_pos, &geometry->collider);
             if (dist < max_length) {
@@ -215,7 +215,7 @@ void check_collision(Geometry *geometry, Object **objects, int object_count, Vec
         vector3f_zero(wanted_movement);
     } else if (max_length < movement_length) {
         vector3f_normalize(wanted_movement);
-        vector3f_scale(max_length, wanted_movement);
+        vector3f_scale(sqrt(max_length), wanted_movement);
     }   
 }
 
