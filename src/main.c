@@ -157,7 +157,7 @@ void init_floor(ObjectPool *floor, float room_size, float room_height) {
     (void)room_height;
     (void)room_size;
     for (int i = 0; i < floor->object_count; i++) {
-        Transform *t = &floor->objects[i]->transform;
+        Transform *t = &floor->objects[i]->geometry.transform;
         vector3f_set(&t->position, 0, -room_height/2.0, 0);
         vector3f_x(&t->rotation, M_PI/2);
         t->scale = 1;
@@ -171,7 +171,7 @@ void init_walls(ObjectPool *walls, float room_size, float room_height) {
     float x[4] = {0,room_size/2.0,0, -room_size/2.0};
     float z[4] = {room_size/2.0,0,-room_size/2.0,0};
     for (int i = 0; i < walls->object_count; i++) {
-        Transform *t = &walls->objects[i]->transform;
+        Transform *t = &walls->objects[i]->geometry.transform;
         vector3f_y(&t->rotation, rotation[i]);        
         vector3f_set(&t->position, x[i],0,z[i]);
         t->scale = 1;
@@ -182,11 +182,12 @@ void init_walls(ObjectPool *walls, float room_size, float room_height) {
 void init_cubes(ObjectPool *cubes, float room_height) {
     (void)room_height;
     for (int i = 0; i < cubes->object_count; i++) {
-        Transform *t = &cubes->objects[i]->transform;
-        vector3f_y(&t->rotation, M_PI/3);
-        vector3f_set(&t->position, 0, -room_height/4, 7);
-        t->scale = 1;
-        transform_rebuild(t);
+        Geometry *g = &cubes->objects[i]->geometry;
+        vector3f_y(&g->transform.rotation, M_PI/3);
+        vector3f_set(&g->transform.position, 0, -room_height/4, 7);
+        g->transform.scale = 1;
+        transform_rebuild(&g->transform);
+        geometry_set_collider_sphere(g, 1);
     }
 }
 
@@ -238,7 +239,6 @@ int main(int argc, char **argv) {
     for (int i = 0; i < cube_pool->object_count; i++) {
         objects[n++] = cube_pool->objects[i];
     }
-
     init_floor(floor_pool, room_size, room_height);
     init_walls(wall_pool, room_size, room_height);
     init_cubes(cube_pool, room_height);
@@ -247,6 +247,10 @@ int main(int argc, char **argv) {
     SDL_GL_SetSwapInterval(0);    
 
     camera.position.z = -4;
+
+    Geometry player;
+    geometry_set_collider_sphere(&player, 1);
+
 
     while (handle_events(&camera,&movement)) {        
         update_time(&app_time);

@@ -60,8 +60,18 @@ void vector3f_z(Vector3f *v, float z) {
     v->z = z;
 }
 
+float vector3f_length2(Vector3f *v) {
+    return v->x * v->x + v->y * v->y + v->z * v->z;
+}
+
 float vector3f_length(Vector3f *v) {
-    return sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
+    return sqrtf(vector3f_length2(v));
+}
+
+float vector3f_dist2(Vector3f *v1, Vector3f *v2) {
+    Vector3f diff;
+    vector3f_sub(v1,v2,&diff);
+    return vector3f_length2(&diff);
 }
 
 void vector3f_normalize(Vector3f *v) {

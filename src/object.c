@@ -6,6 +6,7 @@ Object *object_create(Mesh *mesh, Texture *texture, int type) {
     object->mesh = mesh;
     object->texture = texture;
     object->type = type;
+    object->geometry.collider.type = COLLIDER_NONE;
     return object;
 }
 
@@ -16,4 +17,7 @@ void object_destroy(Object *object) {
     free(object);
 }
 
-
+void geometry_set_collider_sphere(Geometry *geometry, float radius) {
+    geometry->collider.type = COLLIDER_SPHERE;
+    geometry->collider.sphere.radius = radius;
+}

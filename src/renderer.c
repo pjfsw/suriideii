@@ -162,7 +162,7 @@ Renderer *renderer_create(double fov) {
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
     glBlendFunc(GL_SRC_ALPHA, GL_CONSTANT_ALPHA);    
-    glClearColor(0.2, 0.3, 0.5, 1.0);
+    glClearColor(0.4, 0.5, 0.6, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     return renderer;
@@ -181,7 +181,7 @@ void _renderer_create_shadows(Renderer *renderer, Object **objects, int object_c
     for (int i = 0; i < object_count; i++) {
         Object *object = objects[i];
         if (object != NULL) {
-            shadow_shader_set_world(renderer->shadow_shader, &object->transform.m);
+            shadow_shader_set_world(renderer->shadow_shader, &object->geometry.transform.m);
             mesh_render(object->mesh);
         }
     }
@@ -189,7 +189,7 @@ void _renderer_create_shadows(Renderer *renderer, Object **objects, int object_c
 
 void _renderer_render_object(Renderer *renderer, Object *object) {
     render_shader_bind_texture(object->texture);
-    render_shader_set_world(renderer->render_shader, &object->transform.m);
+    render_shader_set_world(renderer->render_shader, &object->geometry.transform.m);
     mesh_render(object->mesh);
 }    
 

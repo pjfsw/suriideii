@@ -36,3 +36,15 @@ void object_pool_destroy(ObjectPool *pool, bool destroy_mesh_and_texture) {
     }
     free(pool);
 }
+
+void object_pool_foreach(ObjectPool *pool, ObjectPoolForEach for_each, void *user_data) {
+    if (pool == NULL) {
+        return;
+    }
+    for (int i = 0; i < pool->object_count; i++) {
+        if (pool->objects[i] != NULL) {
+            for_each(pool->objects[i], i, user_data);
+        }
+    }
+}
+

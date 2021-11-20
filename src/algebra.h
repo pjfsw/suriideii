@@ -47,7 +47,14 @@ void vector3f_z(Vector3f *v, float z);
 
 void vector3f_normalize(Vector3f *v);
 
+// Squared length of vector
+float vector3f_length2(Vector3f *v);
+
+// Length of vector, same as sqrt(vector3f_length2(v))
 float vector3f_length(Vector3f *v);
+
+// Squared distance between two vectors
+float vector3f_dist2(Vector3f *v1, Vector3f *v2);
 
 void vector3f_rotate(Vector3f *to_rotate, float angle, Vector3f *axis);
 

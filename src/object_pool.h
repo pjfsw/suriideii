@@ -14,8 +14,12 @@ typedef struct {
     int object_count;
 } ObjectPool;
 
+typedef void (*ObjectPoolForEach)(Object *object, int index, void *user_data);
+
 ObjectPool *object_pool_create(Mesh *mesh, Texture *texture, int count, int type);
 
 void object_pool_destroy(ObjectPool *pool, bool destroy_mesh_and_texture);
+
+void object_pool_foreach(ObjectPool *pool, ObjectPoolForEach for_each, void *user_data);
 
 #endif
