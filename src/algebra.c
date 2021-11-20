@@ -20,7 +20,7 @@ char *vector2f_to_string(Vector2f *v, char *output) {
 }
 
 char *vector3f_to_string(Vector3f *v, char *output) {
-    sprintf(output, "(%f,%f,%f)", v->x, v->y, v->z);
+    sprintf(output, "(%0.9f,%0.9f,%0.9f)", v->x, v->y, v->z);
     return output;
 }
 

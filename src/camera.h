@@ -20,17 +20,14 @@ void camera_reset(Camera *camera);
 
 void camera_set(Camera *camera, Vector3f *position, Vector3f *target, Vector3f *up);
 
-// Move along the target direction
-void camera_move_unrestrained(Camera *camera, double delta);
+void camera_get_move_vector(Camera *camera, bool backward, double move, Vector3f *move_vector);
 
-// Move along the ground
-void camera_move(Camera *camera, bool backward, double delta_time);
+void camera_get_move_left_vector(Camera *camera, double move, Vector3f *move_vector);
 
-void camera_move_left(Camera *camera, double delta_time);
+void camera_get_move_right_vector(Camera *camera, double move, Vector3f *move_vector);
 
-void camera_move_right(Camera *camera, double delta_time);
+void camera_add_movement(Camera *camera, Vector3f *move_vector);
 
-// Normalized screen coordinates
 void camera_look(Camera *camera, float dx, float dy);
 
 void camera_transform_rebuild(Camera *camera);

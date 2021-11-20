@@ -13,6 +13,7 @@
 #include "object_pool.h"
 #include "shadowmap.h"
 #include "renderer.h"
+#include "physics.h"
 
 #define REQ_MAJOR_VERSION 4
 #define REQ_MINOR_VERSION 2
@@ -55,16 +56,18 @@ void create_vbos(Mesh **meshes, int mesh_count) {
 }*/
 
 
-void update_camera(Movement *movement, Camera *camera, float delta_time) {
+void get_wanted_movement(Movement *movement, Camera *camera, float delta_time, Vector3f *wanted_movement) {
+    float move = 10.0f * delta_time;
+    vector3f_zero(wanted_movement);
     if (movement->forward) {
-        camera_move(camera, false, delta_time);
+        camera_get_move_vector(camera, false, move, wanted_movement);
     } else if (movement->backward) {
-        camera_move(camera, true, delta_time);
+        camera_get_move_vector(camera, true, move, wanted_movement);
     }
     if (movement->left) {
-        camera_move_left(camera, delta_time);
+        camera_get_move_left_vector(camera, move, wanted_movement);
     } else if (movement->right) {
-        camera_move_right(camera, delta_time);
+        camera_get_move_right_vector(camera, move, wanted_movement);
     }
 }
 
@@ -187,8 +190,33 @@ void init_cubes(ObjectPool *cubes, float room_height) {
         vector3f_set(&g->transform.position, 0, -room_height/4, 7);
         g->transform.scale = 1;
         transform_rebuild(&g->transform);
-        geometry_set_collider_sphere(g, 1);
+        geometry_set_collider_sphere(g, 2);
     }
+}
+
+void check_collision(Geometry *geometry, Object **objects, int object_count, Vector3f *wanted_movement) {
+    Vector3f new_pos;
+    vector3f_copy(&geometry->transform.position, &new_pos);
+    vector3f_add(wanted_movement, &new_pos);
+
+    float movement_length = vector3f_length(wanted_movement);
+    float max_length = movement_length;
+    for (int i = 0; i < object_count; i++) {
+        if (objects[i] != NULL) {
+            float dist = physics_object_distance(
+                &objects[i]->geometry.transform.position, &objects[i]->geometry.collider,
+                &new_pos, &geometry->collider);
+            if (dist < max_length) {
+                max_length = dist;
+            }
+        }
+    }
+    if (max_length < 0.0001) {
+        vector3f_zero(wanted_movement);
+    } else if (max_length < movement_length) {
+        vector3f_normalize(wanted_movement);
+        vector3f_scale(max_length, wanted_movement);
+    }   
 }
 
 int main(int argc, char **argv) {
@@ -249,12 +277,19 @@ int main(int argc, char **argv) {
     camera.position.z = -4;
 
     Geometry player;
+    player.transform.scale = 1;
     geometry_set_collider_sphere(&player, 1);
-
 
     while (handle_events(&camera,&movement)) {        
         update_time(&app_time);
-        update_camera(&movement, &camera, app_time.delta_time);
+        vector3f_copy(&camera.position, &player.transform.position);
+
+        Vector3f wanted_movement;
+        get_wanted_movement(&movement, &camera, app_time.delta_time, &wanted_movement);
+
+        check_collision(&player, objects, object_count, &wanted_movement);
+        camera_add_movement(&camera, &wanted_movement);
+
         if (camera.position.x < room_min) {
             camera.position.x = room_min;
         }

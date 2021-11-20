@@ -36,6 +36,7 @@ add_executable(suriideii
     src/hud_shader.c
     src/tilemap.c
     src/object_pool.c
+    src/physics.c
 )
 
 configure_file(resources/render.vs ./render.vs COPYONLY)
