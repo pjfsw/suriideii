@@ -199,7 +199,7 @@ void check_collision(Geometry *geometry, Object **objects, int object_count, Vec
     vector3f_copy(&geometry->transform.position, &new_pos);
     vector3f_add(wanted_movement, &new_pos);
 
-    float movement_length = vector3f_length(wanted_movement);
+    float movement_length = vector3f_length2(wanted_movement);
     float max_length = movement_length;
     for (int i = 0; i < object_count; i++) {
         if (objects[i] != NULL) {
@@ -211,12 +211,13 @@ void check_collision(Geometry *geometry, Object **objects, int object_count, Vec
             }
         }
     }
-    if (max_length < 0.0001) {
-        vector3f_zero(wanted_movement);
+    if (max_length < 0.001 && movement_length > 0) {
+        vector3f_normalize(wanted_movement);
+        vector3f_scale(-0.00001, wanted_movement);
     } else if (max_length < movement_length) {
         vector3f_normalize(wanted_movement);
         vector3f_scale(sqrt(max_length), wanted_movement);
-    }   
+    }
 }
 
 int main(int argc, char **argv) {
